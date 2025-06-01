@@ -26,8 +26,7 @@ pipeline {
 
         stage('Run Tests') {
             steps {
-                // Pon aquí tus comandos para tests si tienes
-                echo 'No tests defined'
+                sh './venv/bin/pytest tests/' 
             }
         }
 
