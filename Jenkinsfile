@@ -28,8 +28,7 @@ pipeline {
             steps {
                 echo 'Running tests con pytest, pero sin bloquear la build...'
                 sh '''
-                    source venv/bin/activate
-                    pytest tests/ || echo "Tests fallaron, pero continuamos con la pipeline"
+                    ./venv/bin/pytest tests/ || echo "Tests fallaron, pero continuamos con la pipeline"
                 '''
             }
         }
