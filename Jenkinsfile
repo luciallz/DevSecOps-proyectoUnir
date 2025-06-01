@@ -7,12 +7,6 @@ pipeline {
                 cleanWs()
             }
         }
-        
-        stage('Clone') {
-            steps {
-                git 'https://github.com/luciallz/DevSecOps-proyectoUnir/'
-            }
-        }
 
         stage('Setup Python') {
             steps {
