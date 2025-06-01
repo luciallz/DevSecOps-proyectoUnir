@@ -4,7 +4,7 @@ pipeline {
     stages {
         stage('Clone') {
             steps {
-                git 'https://github.com/luciallz/DevSecOps-proyectoUnir'
+                git 'https://github.com/luciallz/DevSecOps-proyectoUnir/'
             }
         }
 
