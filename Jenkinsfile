@@ -4,7 +4,8 @@ pipeline {
     stages {
         stage('Clean Workspace') {
             steps {
-                cleanWs()
+                deleteDir()   // borra todo el workspace actual
+                cleanWs()     // plugin de limpieza
             }
         }
 
