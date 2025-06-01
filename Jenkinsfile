@@ -26,7 +26,7 @@ pipeline {
 
         stage('Run Tests') {
             steps {
-                sh './venv/bin/pytest tests/' 
+                sh './venv/bin/pytest -W ignore::DeprecationWarning tests/'
             }
         }
 
