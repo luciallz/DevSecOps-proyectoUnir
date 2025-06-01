@@ -2,6 +2,12 @@ pipeline {
     agent any
 
     stages {
+        stage('Clean Workspace') {
+            steps {
+                cleanWs()
+            }
+        }
+        
         stage('Clone') {
             steps {
                 git 'https://github.com/luciallz/DevSecOps-proyectoUnir/'
