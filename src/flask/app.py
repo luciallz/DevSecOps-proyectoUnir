@@ -61,6 +61,12 @@ if t.TYPE_CHECKING:  # pragma: no cover
     from .testing import FlaskClient
     from .testing import FlaskCliRunner
     from .typing import HeadersValue
+from flask import Flask
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return "¡Hola desde Flask!"
 
 T_shell_context_processor = t.TypeVar(
     "T_shell_context_processor", bound=ft.ShellContextProcessorCallable
