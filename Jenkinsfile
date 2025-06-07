@@ -2,11 +2,12 @@ pipeline {
     agent any
 
     environment {
+        SONAR_SCANNER_VERSION = '4.7.0.2747'
         SONAR_HOST_URL = 'http://localhost:9000'
-        SONAR_AUTH_TOKEN = credentials('sonar-token-id')  // Token guardado en Jenkins Credentials
+        SONAR_AUTH_TOKEN = credentials('sonar-token-id')  // Asegúrate que este ID existe
         DEP_CHECK_OUTPUT = 'dependency-check-report.html'
         ZAP_REPORT = 'zap-report.html'
-        PROJECT_KEY = 'DevSecOps-proyectoUnir'  // Usa este proyecto para sonar-scanner
+        PROJECT_KEY = 'DevSecOps-proyectoUnir'
     }
 
     stages {
@@ -26,10 +27,8 @@ pipeline {
         stage('Setup SonarScanner') {
             steps {
                 sh '''
-                    export SONAR_SCANNER_VERSION=4.7.0.2747
-                    export SONAR_SCANNER_HOME=$HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux
-                    mkdir -p $HOME/.sonar
-                    curl -sSLo $HOME/.sonar/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux.zip
+                    export SONAR_SCANNER_HOME=$HOME/.sonar/sonar-scanner-${SONAR_SCANNER_VERSION}-linux
+                    curl --create-dirs -sSLo $HOME/.sonar/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux.zip
                     unzip -o $HOME/.sonar/sonar-scanner.zip -d $HOME/.sonar/
                     export PATH=$SONAR_SCANNER_HOME/bin:$PATH
                 '''
@@ -40,11 +39,11 @@ pipeline {
             steps {
                 withSonarQubeEnv('SonarQube') {
                     sh """
-                        $HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux/bin/sonar-scanner \
-                        -Dsonar.projectKey=${PROJECT_KEY} \
-                        -Dsonar.sources=. \
-                        -Dsonar.host.url=${SONAR_HOST_URL} \
-                        -Dsonar.login=${SONAR_AUTH_TOKEN}
+                        ~/.sonar/sonar-scanner-${SONAR_SCANNER_VERSION}-linux/bin/sonar-scanner \
+                          -Dsonar.projectKey=${PROJECT_KEY} \
+                          -Dsonar.sources=. \
+                          -Dsonar.host.url=${SONAR_HOST_URL} \
+                          -Dsonar.login=${SONAR_AUTH_TOKEN}
                     """
                 }
             }
@@ -68,18 +67,18 @@ pipeline {
 
         stage('Dependency-Check Analysis') {
             steps {
-                sh '''
+                sh """
                     ./dependency-check/bin/dependency-check.sh --project ${PROJECT_KEY} --scan . --format HTML --out . --enableExperimental
-                '''
+                """
                 publishHTML([allowMissing: false, alwaysLinkToLastBuild: true, keepAll: true,
-                    reportDir: '.', reportFiles: DEP_CHECK_OUTPUT, reportName: 'OWASP Dependency-Check Report'])
+                    reportDir: '.', reportFiles: "${DEP_CHECK_OUTPUT}", reportName: 'OWASP Dependency-Check Report'])
             }
         }
 
         stage('Start App for DAST') {
             steps {
                 sh './venv/bin/python app.py &'
-                sleep 20  // Espera que la app esté arriba
+                sleep 20
             }
         }
 
@@ -89,7 +88,7 @@ pipeline {
                     zap-baseline.py -t http://localhost:5000 -r ${ZAP_REPORT}
                 """
                 publishHTML([allowMissing: false, alwaysLinkToLastBuild: true, keepAll: true,
-                    reportDir: '.', reportFiles: ZAP_REPORT, reportName: 'OWASP ZAP Report'])
+                    reportDir: '.', reportFiles: "${ZAP_REPORT}", reportName: 'OWASP ZAP Report'])
             }
         }
 
