@@ -87,6 +87,20 @@ pipeline {
             }
         }
 
+        stage('Publishing OWASP report') {
+            steps {
+                script {
+                    publishHTML([
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: './',
+                        reportFiles: 'dependency-check-report.html',
+                        reportName: 'Reporte OWASP'
+                    ])
+                }
+            }
+        }
 
         stage('Start App for DAST') {
             steps {
