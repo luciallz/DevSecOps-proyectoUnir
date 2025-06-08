@@ -112,6 +112,7 @@ pipeline {
         stage('OWASP ZAP Scan') {
             steps {
                 sh """
+                    docker run -u root -v $(pwd):/zap/wrk:rw -t owasp/zap2docker-stable zap-baseline.py \
                     zap-baseline.py -t http://localhost:5000 -r ${ZAP_REPORT}
                 """
                 publishHTML([allowMissing: false, alwaysLinkToLastBuild: true, keepAll: true,
