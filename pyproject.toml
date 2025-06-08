@@ -193,8 +193,7 @@ use_frozen_constraints = true
 dependency_groups = ["tests"]
 env_tmp_dir = "{toxworkdir}/tmp/{envname}"
 commands = [[
-    "pytest", "-v", "--tb=short", "--basetemp={env_tmp_dir}",
-    {replace = "posargs", default = [], extend = true},
+    "pytest", "-v", "--tb=short", "--basetemp={env_tmp_dir}"
 ]]
 
 [tool.tox.env.tests-min]
@@ -208,12 +207,8 @@ commands = [
         "itsdangerous==2.2.0",
         "jinja2==3.1.2",
         "markupsafe==2.1.1",
-        "werkzeug==3.1.0",
-    ],
-    [
-        "pytest", "-v", "--tb=short", "--basetemp={env_tmp_dir}",
-        {replace = "posargs", default = [], extend = true},
-    ],
+        "werkzeug==3.1.0"
+    ]
 ]
 
 [tool.tox.env.tests-dev]
@@ -227,11 +222,7 @@ commands = [
         "https://github.com/pallets/itsdangerous/archive/refs/heads/main.tar.gz",
         "https://github.com/pallets/jinja/archive/refs/heads/main.tar.gz",
         "https://github.com/pallets/markupsafe/archive/refs/heads/main.tar.gz",
-        "https://github.com/pallets/werkzeug/archive/refs/heads/main.tar.gz",
-    ],
-    [
-        "pytest", "-v", "--tb=short", "--basetemp={env_tmp_dir}",
-        {replace = "posargs", default = [], extend = true},
+        "https://github.com/pallets/werkzeug/archive/refs/heads/main.tar.gz"
     ],
 ]
 
@@ -279,4 +270,4 @@ labels = ["update"]
 dependency_groups = []
 no_default_groups = true
 skip_install = true
-commands = [["uv", "lock", {replace = "posargs", default = ["-U"], extend = true}]]
+commands = [["uv", "lock", "-U"]]
