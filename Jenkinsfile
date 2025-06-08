@@ -61,20 +61,31 @@ pipeline {
             steps {
                 sh '''
                     echo "Ejecutando tests sin warnings..."
-                    ./venv/bin/pytest -p no:warnings tests/ || echo "⚠️ Algunos tests fallaron, pero seguimos"
+                    ./venv/bin/pytest -p no:warnings tests/ || echo " Algunos tests fallaron, pero seguimos"
                 '''
             }
         }
 
+        // stage('Dependency-Check Analysis') {
+        //     steps {
+        //         sh """
+        //             ./dependency-check/bin/dependency-check.sh --project ${PROJECT_KEY} --scan . --format HTML --out . --enableExperimental
+        //         """
+        //         publishHTML([allowMissing: false, alwaysLinkToLastBuild: true, keepAll: true,
+        //             reportDir: '.', reportFiles: "${DEP_CHECK_OUTPUT}", reportName: 'OWASP Dependency-Check Report'])
+        //     }
+        // }
         stage('Dependency-Check Analysis') {
             steps {
                 sh """
                     ./dependency-check/bin/dependency-check.sh --project ${PROJECT_KEY} --scan . --format HTML --out . --enableExperimental
+                    ls -l ${DEP_CHECK_OUTPUT}
                 """
-                publishHTML([allowMissing: false, alwaysLinkToLastBuild: true, keepAll: true,
+                publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true,
                     reportDir: '.', reportFiles: "${DEP_CHECK_OUTPUT}", reportName: 'OWASP Dependency-Check Report'])
             }
         }
+
 
         stage('Start App for DAST') {
             steps {
@@ -83,15 +94,26 @@ pipeline {
             }
         }
 
+        // stage('OWASP ZAP Scan') {
+        //     steps {
+        //         sh """
+        //             zap-baseline.py -t http://localhost:5000 -r ${ZAP_REPORT}
+        //         """
+        //         publishHTML([allowMissing: false, alwaysLinkToLastBuild: true, keepAll: true,
+        //             reportDir: '.', reportFiles: "${ZAP_REPORT}", reportName: 'OWASP ZAP Report'])
+        //     }
+        // }
         stage('OWASP ZAP Scan') {
             steps {
                 sh """
                     zap-baseline.py -t http://localhost:5000 -r ${ZAP_REPORT}
+                    ls -l ${ZAP_REPORT}
                 """
-                publishHTML([allowMissing: false, alwaysLinkToLastBuild: true, keepAll: true,
+                publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true,
                     reportDir: '.', reportFiles: "${ZAP_REPORT}", reportName: 'OWASP ZAP Report'])
             }
         }
+
 
         stage('Stop App') {
             steps {
