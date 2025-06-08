@@ -104,7 +104,7 @@ pipeline {
 
         stage('Start App for DAST') {
             steps {
-                sh './venv/bin/python app.py &'
+                sh 'nohup ./venv/bin/python src/flask/app.py > app.log 2>&1 &'
                 sleep 20
             }
         }
