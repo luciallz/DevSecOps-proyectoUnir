@@ -74,7 +74,7 @@ pipeline {
         stage('Dependency-Check Analysis') {
             steps {
                 sh '''
-                    /home/kali2/Documentos/dependency-check/bin/dependency-check.sh --project DevSecOps-proyectoUnir --scan . --format HTML --out . --enableExperimental
+                    /opt/dependency-check/bin/dependency-check.sh --project DevSecOps-proyectoUnir --scan . --format HTML --out . --enableExperimental
                 '''
                 publishHTML([
                     allowMissing: false,
