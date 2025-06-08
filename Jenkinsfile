@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         SONAR_SCANNER_VERSION = '4.7.0.2747'
-        SONAR_HOST_URL = 'https://a6ac-37-11-151-16.ngrok-free.app'
+        SONAR_HOST_URL = 'https://05f5-37-11-151-16.ngrok-free.app'
         SONAR_AUTH_TOKEN = credentials('sonar-token-id')  // Asegúrate que este ID existe
         DEP_CHECK_OUTPUT = 'dependency-check-report.html'
         ZAP_REPORT = 'zap-report.html'
