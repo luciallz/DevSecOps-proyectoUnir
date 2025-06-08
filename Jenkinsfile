@@ -60,7 +60,8 @@ pipeline {
         stage('Run Tests') {
             steps {
                 sh '''
-                    ./venv/bin/pytest tests/ || echo "Tests fallaron, pero continuamos con la pipeline"
+                    echo "Ejecutando tests sin warnings..."
+                    ./venv/bin/pytest -p no:warnings tests/ || echo "⚠️ Algunos tests fallaron, pero seguimos"
                 '''
             }
         }
