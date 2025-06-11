@@ -3,6 +3,7 @@ pipeline {
 
     environment {
         SONAR_HOST_URL = 'http://sonarqube:9000'
+        SONAR_SCANNER_VERSION = '3.3.0.1492'
         PROJECT_KEY = 'DevSecOps-proyectoUnir'
         DEP_CHECK_OUTPUT = 'dependency-check-report.html'
         ZAP_REPORT = 'zap-report.html'
