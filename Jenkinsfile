@@ -15,13 +15,14 @@ pipeline {
         stage('Clean Workspace') {
             steps {
                 deleteDir()
-                cleanWs()
             }
         }
 
         stage('Checkout') {
             steps {
-                git url: 'https://github.com/luciallz/DevSecOps-proyectoUnir.git', credentialsId: 'github-token', branch: 'main'
+                git branch: 'main',
+                    url: 'https://github.com/luciallz/DevSecOps-proyectoUnir.git',
+                    credentialsId: 'github-token'
             }
         }
 
