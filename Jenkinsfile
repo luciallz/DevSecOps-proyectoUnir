@@ -1,6 +1,8 @@
 pipeline {
     agent any
-
+    tools {
+        git 'Default'
+    }
     environment {
         SONAR_HOST_URL = 'http://sonarqube:9000'
         SONAR_SCANNER_VERSION = '3.3.0.1492'
@@ -19,15 +21,7 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                checkout([$class: 'GitSCM',
-                branches: [[name: '*/main']],
-                doGenerateSubmoduleConfigurations: false,
-                extensions: [],
-                userRemoteConfigs: [[
-                    url: 'https://github.com/luciallz/DevSecOps-proyectoUnir.git',
-                    credentialsId: 'github-token'
-                ]]
-                ])
+                git url: 'https://github.com/luciallz/DevSecOps-proyectoUnir.git', credentialsId: 'github-token', branch: 'main'
             }
         }
 
