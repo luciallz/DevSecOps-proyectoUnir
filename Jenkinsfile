@@ -33,13 +33,17 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_AUTH_TOKEN')]) {
-                    sh """
-                        ~/.sonar/sonar-scanner-${SONAR_SCANNER_VERSION}-linux/bin/sonar-scanner \
-                        -Dsonar.projectKey=${PROJECT_KEY} \
-                        -Dsonar.sources=. \
-                        -Dsonar.host.url=${SONAR_HOST_URL} \
-                        -Dsonar.login=${SONAR_AUTH_TOKEN}
-                    """
+                sh """
+                    docker run --rm \
+                    -e SONAR_HOST_URL=http://sonarqube:9000 \
+                    -e SONAR_LOGIN=${SONAR_AUTH_TOKEN} \
+                    -v \$(pwd):/usr/src \
+                    sonarsource/sonar-scanner-cli \
+                    -Dsonar.projectKey=DevSecOps-proyectoUnir \
+                    -Dsonar.sources=. \
+                    -Dsonar.host.url=http://sonarqube:9000 \
+                    -Dsonar.login=${SONAR_AUTH_TOKEN}
+                """
                 }
             }
         }
