@@ -34,11 +34,7 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_AUTH_TOKEN')]) {
                 sh """
-                    docker run --rm \
-                    -e SONAR_HOST_URL=http://sonarqube:9000 \
-                    -e SONAR_LOGIN=${SONAR_AUTH_TOKEN} \
-                    -v \$(pwd):/usr/src \
-                    sonarsource/sonar-scanner-cli \
+                    sonar-scanner \
                     -Dsonar.projectKey=DevSecOps-proyectoUnir \
                     -Dsonar.sources=. \
                     -Dsonar.host.url=http://sonarqube:9000 \
