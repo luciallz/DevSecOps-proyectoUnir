@@ -138,6 +138,7 @@ pipeline {
                 if (currentBuild.currentResult == 'SUCCESS') {
                     archiveArtifacts artifacts: '**/*', allowEmptyArchive: true
                 }
+            }
         }
     }
 }
