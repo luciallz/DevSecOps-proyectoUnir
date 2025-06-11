@@ -1,8 +1,5 @@
 pipeline {
     agent any
-    tools {
-        git 'Default'
-    }
     environment {
         SONAR_HOST_URL = 'http://sonarqube:9000'
         SONAR_SCANNER_VERSION = '3.3.0.1492'
