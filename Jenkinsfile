@@ -2,12 +2,10 @@ pipeline {
     agent any
 
     environment {
-        SONAR_SCANNER_VERSION = '4.7.0.2747'
         SONAR_HOST_URL = 'http://sonarqube:9000'
-        SONAR_AUTH_TOKEN = credentials('sonar-token')  // Asegúrate que este ID existe
+        PROJECT_KEY = 'DevSecOps-proyectoUnir'
         DEP_CHECK_OUTPUT = 'dependency-check-report.html'
         ZAP_REPORT = 'zap-report.html'
-        PROJECT_KEY = 'DevSecOps-proyectoUnir'
     }
 
     stages {
@@ -26,13 +24,15 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('SonarQube') {
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_AUTH_TOKEN')]) {
                     sh """
-                        ~/.sonar/sonar-scanner-${SONAR_SCANNER_VERSION}-linux/bin/sonar-scanner \
-                          -Dsonar.projectKey=${PROJECT_KEY} \
-                          -Dsonar.sources=. \
-                          -Dsonar.host.url=${SONAR_HOST_URL} \
-                          -Dsonar.login=${SONAR_AUTH_TOKEN}
+                        docker run --rm \
+                            -e SONAR_HOST_URL=${SONAR_HOST_URL} \
+                            -e SONAR_LOGIN=${SONAR_AUTH_TOKEN} \
+                            -v \$(pwd):/usr/src \
+                            sonarsource/sonar-scanner-cli \
+                            -Dsonar.projectKey=${PROJECT_KEY} \
+                            -Dsonar.sources=/usr/src
                     """
                 }
             }
@@ -62,9 +62,12 @@ pipeline {
 
         stage('Dependency-Check Analysis') {
             steps {
-                sh '''
-                    /opt/dependency-check/bin/dependency-check.sh --project DevSecOps-proyectoUnir --scan . --format HTML --out . --enableExperimental
-                '''
+                sh """
+                    docker run --rm \
+                        -v \$(pwd):/src \
+                        owasp/dependency-check:latest \
+                        --project ${PROJECT_KEY} --scan /src --format HTML --out /src --enableExperimental
+                """
                 publishHTML([
                     allowMissing: false,
                     alwaysLinkToLastBuild: true,
@@ -78,16 +81,14 @@ pipeline {
 
         stage('Publishing OWASP report') {
             steps {
-                script {
-                    publishHTML([
-                        allowMissing: false,
-                        alwaysLinkToLastBuild: true,
-                        keepAll: true,
-                        reportDir: './',
-                        reportFiles: 'dependency-check-report.html',
-                        reportName: 'Reporte OWASP'
-                    ])
-                }
+                publishHTML([
+                    allowMissing: false,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true,
+                    reportDir: '.',
+                    reportFiles: 'dependency-check-report.html',
+                    reportName: 'Reporte OWASP'
+                ])
             }
         }
 
@@ -100,26 +101,22 @@ pipeline {
 
         stage('OWASP ZAP Scan') {
             steps {
-                script {
-                    def ZAP_REPORT = 'zap-report.html'
-                    sh '''
-                        docker run --rm -u root \
-                            -v $(pwd):/zap/wrk \
-                            ghcr.io/zaproxy/zaproxy:stable \
-                            zap.sh -cmd -autorun /zap/wrk/zap-config.yaml
-                    '''
-                    publishHTML([
-                        allowMissing: false,
-                        alwaysLinkToLastBuild: true,
-                        keepAll: true,
-                        reportDir: '.',
-                        reportFiles: ZAP_REPORT,
-                        reportName: 'OWASP ZAP Report'
-                    ])
-                }
+                sh """
+                    docker run --rm -u root \
+                        -v \$(pwd):/zap/wrk \
+                        ghcr.io/zaproxy/zaproxy:stable \
+                        zap.sh -cmd -autorun /zap/wrk/zap-config.yaml
+                """
+                publishHTML([
+                    allowMissing: false,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true,
+                    reportDir: '.',
+                    reportFiles: ZAP_REPORT,
+                    reportName: 'OWASP ZAP Report'
+                ])
             }
         }
-
 
         stage('Stop App') {
             steps {
