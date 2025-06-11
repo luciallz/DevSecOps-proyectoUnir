@@ -1,6 +1,6 @@
 pipeline {
     agent any
-    
+
     environment {
         SONAR_HOST_URL = 'http://sonarqube:9000'
         SONAR_SCANNER_VERSION = '3.3.0.1492'
@@ -18,9 +18,15 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                git branch: 'main',
-                    url: 'https://github.com/luciallz/DevSecOps-proyectoUnir.git',
-                    credentialsId: 'github-token'
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/main']],
+                    extensions: [],
+                    userRemoteConfigs: [[
+                        credentialsId: 'github-token',
+                        url: 'https://github.com/luciallz/DevSecOps-proyectoUnir.git'
+                    ]]
+                ])
             }
         }
 
@@ -128,7 +134,10 @@ pipeline {
     post {
         always {
             echo 'Pipeline terminada. Puedes revisar los reportes generados.'
-            archiveArtifacts artifacts: '*.html', fingerprint: true
+            script {
+                if (currentBuild.currentResult == 'SUCCESS') {
+                    archiveArtifacts artifacts: '**/*', allowEmptyArchive: true
+                }
         }
     }
 }
