@@ -4,7 +4,7 @@ pipeline {
     environment {
         SONAR_SCANNER_VERSION = '4.7.0.2747'
         SONAR_HOST_URL = 'http://sonarqube:9000'
-        SONAR_AUTH_TOKEN = credentials('sonar-token-id')  // Asegúrate que este ID existe
+        SONAR_AUTH_TOKEN = credentials('sonar-token')  // Asegúrate que este ID existe
         DEP_CHECK_OUTPUT = 'dependency-check-report.html'
         ZAP_REPORT = 'zap-report.html'
         PROJECT_KEY = 'DevSecOps-proyectoUnir'
@@ -21,17 +21,6 @@ pipeline {
         stage('Checkout') {
             steps {
                 checkout scm
-            }
-        }
-
-        stage('Setup SonarScanner') {
-            steps {
-                sh '''
-                    export SONAR_SCANNER_HOME=$HOME/.sonar/sonar-scanner-${SONAR_SCANNER_VERSION}-linux
-                    curl --create-dirs -sSLo $HOME/.sonar/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux.zip
-                    unzip -o $HOME/.sonar/sonar-scanner.zip -d $HOME/.sonar/
-                    export PATH=$SONAR_SCANNER_HOME/bin:$PATH
-                '''
             }
         }
 
