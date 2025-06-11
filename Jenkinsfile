@@ -19,15 +19,21 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                git url: 'https://github.com/luciallz/DevSecOps-proyectoUnir.git',
-                credentialsId: 'sonar-token',
-                branch: 'main'
+                checkout([$class: 'GitSCM',
+                branches: [[name: '*/main']],
+                doGenerateSubmoduleConfigurations: false,
+                extensions: [],
+                userRemoteConfigs: [[
+                    url: 'https://github.com/luciallz/DevSecOps-proyectoUnir.git',
+                    credentialsId: 'github-token'
+                ]]
+                ])
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_AUTH_TOKEN')]) {
+                withCredentials([string(credentialsId: 'github-token', variable: 'SONAR_AUTH_TOKEN')]) {
                     sh """
                         ~/.sonar/sonar-scanner-${SONAR_SCANNER_VERSION}-linux/bin/sonar-scanner \
                         -Dsonar.projectKey=${PROJECT_KEY} \
