@@ -19,7 +19,9 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                checkout scm
+                git url: 'https://github.com/luciallz/DevSecOps-proyectoUnir.git',
+                credentialsId: 'sonar-token',
+                branch: 'main'
             }
         }
 
