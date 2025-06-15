@@ -13,15 +13,15 @@ services:
       - devsecops
 
   sonarqube:
-  image: sonarqube:community
-  ports:
-    - "9001:9000"
-  volumes:
-    - sonarqube_data:/opt/sonarqube/data
-    - sonarqube_logs:/opt/sonarqube/logs
-    - sonarqube_extensions:/opt/sonarqube/extensions
-  networks:
-    - devsecops
+    image: sonarqube:latest
+    ports:
+      - "9001:9000"
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_logs:/opt/sonarqube/logs
+      - sonarqube_extensions:/opt/sonarqube/extensions
+    networks:
+      - devsecops
 
 networks:
   devsecops:
