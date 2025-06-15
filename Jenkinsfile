@@ -32,14 +32,12 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_AUTH_TOKEN')]) {
-                sh """
-                    sonar-scanner \
-                    -Dsonar.projectKey=DevSecOps-proyectoUnir \
-                    -Dsonar.sources=. \
-                    -Dsonar.host.url=http://sonarqube:9000 \
-                    -Dsonar.login=${SONAR_AUTH_TOKEN}
-                """
+                withSonarQubeEnv('SonarQubeServer') {
+                    sh """
+                        ${tool 'SonarQubeScanner'}/bin/sonar-scanner \
+                        -Dsonar.projectKey=DevSecOps-proyectoUnir \
+                        -Dsonar.sources=.
+                    """
                 }
             }
         }
