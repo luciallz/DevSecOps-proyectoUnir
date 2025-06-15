@@ -32,7 +32,7 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('SonarQubeServer') {
+                withSonarQubeEnv('SonarQube') {
                     sh """
                         ${tool 'SonarQubeScanner'}/bin/sonar-scanner \
                         -Dsonar.projectKey=DevSecOps-proyectoUnir \
