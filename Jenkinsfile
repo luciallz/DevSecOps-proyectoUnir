@@ -7,7 +7,7 @@ pipeline {
         PROJECT_KEY = 'DevSecOps-proyectoUnir'
         DEP_CHECK_OUTPUT = 'dependency-check-report.html'
         ZAP_REPORT = 'zap-report.html'
-        SONAR_SCANNER_OPTS="-Xmx2048m"
+        SONAR_SCANNER_OPTS = "-Xmx2048m"
     }
 
     stages {
@@ -37,9 +37,12 @@ pipeline {
                     sh """
                         ${tool 'SonarQubeScanner'}/bin/sonar-scanner \
                         -Dsonar.projectKey=${PROJECT_KEY} \
-                        -Dsonar.sources=. \
+                        -Dsonar.sources=src \
+                        -Dsonar.inclusions=**/*.py \
+                        -Dsonar.exclusions=**/templates/**,**/static/**,**/node_modules/**,**/*.min.js,**/*.test.*,**/__pycache__/**,tests/** \
                         -Dsonar.host.url=${SONAR_HOST_URL} \
-                        -Dsonar.exclusions=**/templates/*.html,**/static/**,**/node_modules/**,**/*.min.js,**/*.test.*,**/__pycache__/** \
+                        -Dsonar.python.version=3 \
+                        -Dsonar.qualitygate.wait=true \
                         -Dsonar.cfamily.threads=1
                     """
                 }
