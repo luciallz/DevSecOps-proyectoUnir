@@ -30,14 +30,36 @@ pipeline {
             }
         }
 
+        // stage('SonarQube Analysis') {
+        //     steps {
+        //         withSonarQubeEnv('SonarQube') {
+        //             sh """
+        //                 ${tool 'SonarQubeScanner'}/bin/sonar-scanner \
+        //                 -Dsonar.projectKey=DevSecOps-proyectoUnir \
+        //                 -Dsonar.sources=.
+        //             """
+        //         }
+        //     }
+        // }
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube') {
-                    sh """
-                        ${tool 'SonarQubeScanner'}/bin/sonar-scanner \
-                        -Dsonar.projectKey=DevSecOps-proyectoUnir \
-                        -Dsonar.sources=.
-                    """
+                    script {
+                        def status = sh(
+                            script: """
+                                set -x
+                                ${tool 'SonarQubeScanner'}/bin/sonar-scanner \
+                                -Dsonar.projectKey=DevSecOps-proyectoUnir \
+                                -Dsonar.sources=.
+                            """,
+                            returnStatus: true
+                        )
+                        echo "Código de salida sonar-scanner: ${status}"
+                        
+                        if (status != 0) {
+                            error("Fallo el análisis con sonar-scanner (exit code ${status})")
+                        }
+                    }
                 }
             }
         }
