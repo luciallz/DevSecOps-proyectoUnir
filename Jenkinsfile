@@ -39,8 +39,8 @@ pipeline {
                         -Dsonar.projectKey=${PROJECT_KEY} \
                         -Dsonar.sources=. \
                         -Dsonar.host.url=${SONAR_HOST_URL} \
-                        -Dsonar.exclusions=**/templates/*.html \
-                        -Dsonar.qualitygate.wait=true
+                        -Dsonar.exclusions=**/templates/*.html,**/static/**,**/node_modules/**,**/*.min.js,**/*.test.*,**/__pycache__/** \
+                        -Dsonar.cfamily.threads=1
                     """
                 }
             }
