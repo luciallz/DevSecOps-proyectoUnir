@@ -82,7 +82,7 @@ pipeline {
         stage('Dependency-Check Analysis') {
             steps {
                 sh """
-                    docker run --rm \
+                    /usr/bin/docker run --rm \
                         -v \$(pwd):/src \
                         owasp/dependency-check:latest \
                         --project ${PROJECT_KEY} --scan /src --format HTML --out /src --enableExperimental
@@ -121,7 +121,7 @@ pipeline {
         stage('OWASP ZAP Scan') {
             steps {
                 sh """
-                    docker run --rm -u root \
+                    /usr/bin/docker run --rm -u root \
                         -v \$(pwd):/zap/wrk \
                         ghcr.io/zaproxy/zaproxy:stable \
                         zap.sh -cmd -autorun /zap/wrk/zap-config.yaml
