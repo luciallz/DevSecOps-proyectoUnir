@@ -2,17 +2,16 @@ FROM jenkins/jenkins:lts
 
 USER root
 
-# Instala Python y herramientas necesarias
 RUN apt-get update && \
     apt-get install -y python3 python3-pip python3-venv curl gnupg2 apt-transport-https software-properties-common && \
     # Instalar Docker CLI
     curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - && \
-    add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable" && \
+    echo "deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list && \
     apt-get update && \
     apt-get install -y docker-ce-cli && \
     apt-get clean
 
-RUN groupadd -g 999 docker && \
-    usermod -aG docker jenkins
+# Crear grupo docker con GID 136 para que coincida con el host
+RUN groupadd -g 136 docker && usermod -aG docker jenkins
 
 USER jenkins
