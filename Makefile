@@ -19,3 +19,4 @@ clean:
 
 sonar-status:
 	curl -s http://localhost:9000/api/system/health | jq
+	
