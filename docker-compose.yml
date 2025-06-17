@@ -4,7 +4,7 @@ services:
   jenkins:
     build:
       context: .
-      dockerfile: Dockerfile.jenkins  # Imagen personalizada con Python
+      dockerfile: Dockerfile.jenkins
     container_name: jenkins-devsecops
     ports:
       - "8080:8080"
@@ -18,18 +18,25 @@ services:
       - devsecops
 
   sonarqube:
-    image: sonarqube:latest
+    image: sonarqube:community
+    container_name: sonarqube
     ports:
-      - "9001:9000"
+      - "9000:9000"  # Elimina el 9001
     environment:
       - SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true
-      - SONAR_JAVA_OPTS=-Xmx512m -Xms512m
+      - SONAR_JAVA_OPTS=-Xmx1024m -Xms512m
     volumes:
       - sonarqube_data:/opt/sonarqube/data
       - sonarqube_logs:/opt/sonarqube/logs
       - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_temp:/opt/sonarqube/temp
     networks:
       - devsecops
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    mem_limit: 2g
 
 networks:
   devsecops:
@@ -39,3 +46,4 @@ volumes:
   sonarqube_data:
   sonarqube_logs:
   sonarqube_extensions:
+  sonarqube_temp:
