@@ -84,16 +84,24 @@ pipeline {
 
         stage('Dependency-Check Analysis') {
             steps {
-                sh """
-                    docker run --rm \
-                        -v \$(pwd):/src \
-                        owasp/dependency-check:latest \
-                        --project ${PROJECT_KEY} \
-                        --scan /src \
-                        --format HTML \
-                        --out /src \
-                        --enableExperimental
-                """
+                script {
+                    def dcDataDir = '/var/jenkins_home/dependency-check-data'
+                    sh "mkdir -p ${dcDataDir}"
+                    withCredentials([string(credentialsId: 'nvd-api-key', variable: 'NVD_API_KEY')]) {
+                        sh """
+                            docker run --rm \
+                                -v \$(pwd):/src \
+                                -v ${dcDataDir}:/usr/share/dependency-check/data \
+                                owasp/dependency-check:latest \
+                                --nvdApiKey ${NVD_API_KEY} \
+                                --project ${PROJECT_KEY} \
+                                --scan /src \
+                                --format HTML \
+                                --out /src \
+                                --enableExperimental
+                        """
+                    }
+                }
                 publishHTML([
                     allowMissing: false,
                     alwaysLinkToLastBuild: true,
