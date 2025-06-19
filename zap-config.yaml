@@ -1,0 +1,22 @@
+env:
+  contexts:
+    - name: "Default Context"
+      urls:
+        - "http://host.docker.internal:5000"
+      includePaths:
+        - "http://host.docker.internal:5000/.*"
+      authentication:
+        method: "none"
+  parameters:
+    failOnError: false
+
+jobs:
+  - type: "spider"
+    name: "Spider Scan"
+    context: "Default Context"
+    maxDuration: 1
+
+  - type: "activeScan"
+    name: "Active Scan"
+    context: "Default Context"
+    policy: "Default Policy"
