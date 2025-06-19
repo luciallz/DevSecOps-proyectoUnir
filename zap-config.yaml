@@ -1,13 +1,25 @@
 version: 1.0
+environments:
+  - name: default-env
+    host: "http://host.docker.internal:5000"
+    port: 80
+    context:
+      name: Default Context
+      include:
+        - url: "http://host.docker.internal:5000.*"
 jobs:
-  - name: Basico Active Scan
-    type: active-scan
+  - name: Scan Job
+    type: spider
     parameters:
-      url: http://host.docker.internal:5000
-      recurse: true
-      method: GET
+      context: Default Context
+      maxDepth: 5
+  - name: Active Scan Job
+    type: activeScan
+    parameters:
+      context: Default Context
       policy: Default Policy
+
 reports:
-  - name: html-report
+  - name: HTML Report
     template: traditional-html-report
     file: zap-report.html
