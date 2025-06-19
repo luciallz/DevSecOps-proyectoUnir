@@ -10,7 +10,7 @@ services:
       - "8080:8080"
       - "50000:50000"
     environment:
-      - JENKINS_JAVA_OPTIONS=-Djava.io.tmpdir=/var/jenkins_tmp
+      - JAVA_OPTS=-Djava.io.tmpdir=/var/jenkins_tmp
     volumes:
       - /var/jenkins_home:/var/jenkins_home
       - /var/jenkins_tmp:/var/jenkins_tmp
