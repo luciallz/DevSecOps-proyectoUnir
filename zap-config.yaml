@@ -1,23 +1,23 @@
 version: 1.0
+
 environments:
   - name: default-env
-    host: "http://host.docker.internal:5000"
-    port: 80
+    host: "http://host.docker.internal"
+    port: 5000
     context:
       name: Default Context
       include:
         - url: "http://host.docker.internal:5000.*"
+
 jobs:
-  - name: Scan Job
+  - name: Spider Job
     type: spider
     parameters:
       context: Default Context
-      maxDepth: 5
   - name: Active Scan Job
     type: activeScan
     parameters:
       context: Default Context
-      policy: Default Policy
 
 reports:
   - name: HTML Report
