@@ -26,10 +26,10 @@ services:
       - SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true
       - SONAR_JAVA_OPTS=-Xmx1024m -Xms512m
     volumes:
-      - /mnt/disco50gb/sonarqube_data:/opt/sonarqube/data
-      - /mnt/disco50gb/sonarqube_logs:/opt/sonarqube/logs
-      - /mnt/disco50gb/sonarqube_extensions:/opt/sonarqube/extensions
-      - /mnt/disco50gb/sonarqube_temp:/opt/sonarqube/temp
+      - /var/jenkins_home/sonarqube_data:/opt/sonarqube/data
+      - /var/jenkins_home/sonarqube_logs:/opt/sonarqube/logs
+      - /var/jenkins_home/sonarqube_extensions:/opt/sonarqube/extensions
+      - /var/jenkins_home/sonarqube_temp:/opt/sonarqube/temp
     networks:
       - devsecops
     ulimits:
