@@ -1,23 +1,25 @@
-version: 1.0
+version: "1.0"
 
 environments:
   - name: default-env
-    host: "http://host.docker.internal"
+    host: "http://localhost"
     port: 5000
-    context:
-      name: Default Context
-      include:
-        - url: "http://host.docker.internal:5000.*"
+
+contexts:
+  - name: Default Context
+    include:
+      - url: "http://localhost:5000.*"
 
 jobs:
   - name: Spider Job
     type: spider
-    parameters:
-      context: Default Context
+    context: Default Context
+    parameters: {}
+
   - name: Active Scan Job
     type: activeScan
-    parameters:
-      context: Default Context
+    context: Default Context
+    parameters: {}
 
 reports:
   - name: HTML Report
