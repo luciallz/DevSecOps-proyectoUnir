@@ -57,7 +57,7 @@ pipeline {
             }
         }
 
-         stage('Setup Python Virtual Environment') {
+        stage('Setup Python Virtual Environment') {
             steps {
                 sh '''
                     python3 -m venv venv
@@ -71,13 +71,8 @@ pipeline {
         stage('Run Tests') {
             steps {
                 sh '''
-                    echo "Ejecutando tests sin warnings..."
-                    ./venv/bin/pytest -p no:warnings \
-                    --ignore=tests/test_basic.py \
-                    --ignore=tests/test_helpers.py \
-                    --ignore=tests/test_testing.py \
-                    --ignore=tests/test_request.py \
-                    tests/ || true
+                    echo "Ejecutando test único src/test_app.py..."
+                    ./venv/bin/pytest -p no:warnings src/test_app.py || true
                 '''
             }
         }
@@ -128,7 +123,7 @@ pipeline {
 
         stage('Start App for DAST') {
             steps {
-                sh 'nohup ./venv/bin/python src/flask/app.py > app.log 2>&1 &'
+                sh 'nohup ./venv/bin/python3 src/app.py > app.log 2>&1 &'
                 sleep 20
             }
         }
@@ -154,7 +149,7 @@ pipeline {
 
         stage('Stop App') {
             steps {
-                sh "pkill -f 'python app.py' || true"
+                sh "pkill -f 'python3 src/app.py' || true"
             }
         }
     }
