@@ -31,30 +31,6 @@ pipeline {
             }
         }
 
-        stage('SonarQube Analysis') {
-            environment {
-                scannerHome = tool 'SonarQubeScanner'
-            }
-            steps {
-                withSonarQubeEnv('SonarQube') { 
-                    sh "${scannerHome}/bin/sonar-scanner " +
-                       "-Dsonar.projectKey=DevSecOps-proyectoUnir " +
-                       "-Dsonar.sources=src " +
-                       "-Dsonar.python.coverage.reportPaths=coverage.xml " +
-                       "-Dsonar.inclusions=**/*.py " +
-                       "-Dsonar.exclusions=**/templates/**,**/static/**,**/node_modules/**,**/*.min.js,**/*.test.*,**/__pycache__/**,**/tests/**"
-                }
-            }
-        }
-
-        stage('Quality Gate') {
-            steps {
-                timeout(time: 25, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
-                }
-            }
-        }
-
         stage('Setup Python Virtual Environment') {
             steps {
                 sh '''
@@ -66,10 +42,38 @@ pipeline {
             }
         }
 
-        stage('Run Tests') {
+        stage('Run Tests with Coverage') {
             steps {
-                sh '. venv/bin/activate && pytest --cov=src --cov-report=xml:coverage.xml'
-                sh 'ls -l coverage.xml'
+                sh '''
+                    . venv/bin/activate
+                    pytest --cov=src --cov-report=xml
+                '''
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            environment {
+                scannerHome = tool 'SonarQubeScanner'
+            }
+            steps {
+                withSonarQubeEnv('SonarQube') { 
+                    sh """
+                        ${scannerHome}/bin/sonar-scanner \
+                        -Dsonar.projectKey=${PROJECT_KEY} \
+                        -Dsonar.sources=src \
+                        -Dsonar.python.coverage.reportPaths=coverage.xml \
+                        -Dsonar.inclusions=**/*.py \
+                        -Dsonar.exclusions=**/templates/**,**/static/**,**/node_modules/**,**/*.min.js,**/*.test.*,**/__pycache__/**,**/tests/**
+                    """
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 25, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
             }
         }
 
@@ -93,6 +97,11 @@ pipeline {
                         """
                     }
                 }
+            }
+        }
+
+        stage('Publish OWASP Dependency-Check Report') {
+            steps {
                 publishHTML([
                     allowMissing: false,
                     alwaysLinkToLastBuild: true,
@@ -104,23 +113,12 @@ pipeline {
             }
         }
 
-        stage('Publishing OWASP report') {
-            steps {
-                publishHTML([
-                    allowMissing: false,
-                    alwaysLinkToLastBuild: true,
-                    keepAll: true,
-                    reportDir: '.',
-                    reportFiles: 'dependency-check-report.html',
-                    reportName: 'Reporte OWASP'
-                ])
-            }
-        }
-
         stage('Start App for DAST') {
             steps {
-                sh 'nohup ./venv/bin/python3 src/app.py > app.log 2>&1 &'
-                sleep 20
+                sh '''
+                    nohup ./venv/bin/python3 src/app.py > app.log 2>&1 &
+                    sleep 20
+                '''
             }
         }
 
@@ -132,12 +130,17 @@ pipeline {
                         ghcr.io/zaproxy/zaproxy:stable \
                         zap.sh -cmd -autorun /zap/wrk/zap-config.yaml
                 """
+            }
+        }
+
+        stage('Publish OWASP ZAP Report') {
+            steps {
                 publishHTML([
                     allowMissing: false,
                     alwaysLinkToLastBuild: true,
                     keepAll: true,
                     reportDir: '.',
-                    reportFiles: ZAP_REPORT,
+                    reportFiles: "${ZAP_REPORT}",
                     reportName: 'OWASP ZAP Report'
                 ])
             }
@@ -153,11 +156,7 @@ pipeline {
     post {
         always {
             echo 'Pipeline terminada. Puedes revisar los reportes generados.'
-            script {
-                if (currentBuild.currentResult == 'SUCCESS') {
-                    archiveArtifacts artifacts: '**/*', allowEmptyArchive: true
-                }
-            }
+            archiveArtifacts artifacts: '**/*', allowEmptyArchive: true
         }
     }
 }
