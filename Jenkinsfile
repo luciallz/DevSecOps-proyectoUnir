@@ -39,12 +39,12 @@ pipeline {
                         -Dsonar.projectKey=${PROJECT_KEY} \
                         -Dsonar.sources=src \
                         -Dsonar.tests=src/tests \
-                        -Dsonar.inclusions=**/*.py \
+                        -Dsonar.inclusions=src/**/*.py \
+                        -Dsonar.test.inclusions=src/tests/**/*.py \
                         -Dsonar.exclusions=**/templates/**,**/static/**,**/node_modules/**,**/*.min.js,**/*.test.*,**/__pycache__/** \
-                        -Dsonar.host.url=${SONAR_HOST_URL} \
+                        -Dsonar.coverageReportPaths=coverage.xml \
                         -Dsonar.python.version=3 \
-                        -Dsonar.qualitygate.wait=true \
-                        -Dsonar.coverageReportPaths=coverage.xml
+                        -Dsonar.qualitygate.wait=true
                     """
                 }
             }
