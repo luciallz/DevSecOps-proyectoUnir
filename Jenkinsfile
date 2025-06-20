@@ -41,7 +41,7 @@ pipeline {
                             -Dsonar.projectKey=${PROJECT_KEY} \
                             -Dsonar.sources=src \
                             -Dsonar.inclusions=**/*.py \
-                            -Dsonar.exclusions=**/templates/**,**/static/**,**/node_modules/**,**/*.min.js,**/*.test.*,**/__pycache__/**,tests/** \
+                            -Dsonar.exclusions=**/templates/**,**/static/**,**/node_modules/**,**/*.min.js,**/*.test.*,**/__pycache__/**,**/tests/**
                             -Dsonar.host.url=${SONAR_HOST_URL} \
                             -Dsonar.python.version=3 \
                             -Dsonar.qualitygate.wait=true \
