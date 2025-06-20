@@ -38,12 +38,13 @@ pipeline {
                         ${tool 'SonarQubeScanner'}/bin/sonar-scanner \
                         -Dsonar.projectKey=${PROJECT_KEY} \
                         -Dsonar.sources=src \
+                        -Dsonar.tests=src/tests \
                         -Dsonar.inclusions=**/*.py \
-                        -Dsonar.exclusions=**/templates/**,**/static/**,**/node_modules/**,**/*.min.js,**/*.test.*,**/__pycache__/**,tests/** \
+                        -Dsonar.exclusions=**/templates/**,**/static/**,**/node_modules/**,**/*.min.js,**/*.test.*,**/__pycache__/** \
                         -Dsonar.host.url=${SONAR_HOST_URL} \
                         -Dsonar.python.version=3 \
                         -Dsonar.qualitygate.wait=true \
-                        -Dsonar.cfamily.threads=1
+                        -Dsonar.coverageReportPaths=coverage.xml
                     """
                 }
             }
