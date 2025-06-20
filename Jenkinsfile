@@ -32,22 +32,17 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
+            environment {
+                scannerHome = tool 'SonarQube'
+            }
             steps {
-                script {
-                    def scannerHome = tool 'SonarQubeScanner'
-                    withSonarQubeEnv('SonarQube') {
-                        sh """
-                            ${scannerHome}/bin/sonar-scanner \
-                            -Dsonar.projectKey=${PROJECT_KEY} \
-                            -Dsonar.sources=src \
-                            -Dsonar.inclusions=**/*.py \
-                            -Dsonar.exclusions=**/templates/**,**/static/**,**/node_modules/**,**/*.min.js,**/*.test.*,**/__pycache__/**,**/tests/**
-                            -Dsonar.host.url=${SONAR_HOST_URL} \
-                            -Dsonar.python.version=3 \
-                            -Dsonar.qualitygate.wait=true \
-                            -Dsonar.cfamily.threads=1
-                        """
-                    }
+                withSonarQubeEnv('SonarQube') { 
+                    sh "${scannerHome}/bin/sonar-scanner " +
+                       "-Dsonar.projectKey=DevSecOps-proyectoUnir " +
+                       "-Dsonar.sources=src " +
+                       "-Dsonar.python.coverage.reportPaths=coverage.xml " +
+                       "-Dsonar.inclusions=**/*.py " +
+                       "-Dsonar.exclusions=**/templates/**,**/static/**,**/node_modules/**,**/*.min.js,**/*.test.*,**/__pycache__/**,**/tests/**"
                 }
             }
         }
@@ -73,10 +68,8 @@ pipeline {
 
         stage('Run Tests') {
             steps {
-                sh '''
-                    echo "Ejecutando test único src/test_app.py..."
-                    ./venv/bin/pytest -p no:warnings src/test_app.py || true
-                '''
+                sh '. venv/bin/activate && pytest --cov=src --cov-report=xml:coverage.xml'
+                sh 'ls -l coverage.xml'
             }
         }
 
