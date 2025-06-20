@@ -41,6 +41,7 @@ pipeline {
             steps {
                 sh '''
                     . venv/bin/activate
+                    export PYTHONPATH=$(pwd)/src
                     echo "Ejecutando test con cobertura..."
                     pytest --cov=src --cov-report=xml src/tests/
                 '''
