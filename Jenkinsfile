@@ -72,8 +72,8 @@ pipeline {
         stage('Run Tests') {
             steps {
                 sh '''
-                    echo "Ejecutando test único src/test_app.py..."
-                    ./venv/bin/pytest -p no:warnings src/test_app.py || true
+                    echo "Ejecutando test con cobertura..."
+                    ./venv/bin/pytest --cov=src --cov-report=xml src/tests/
                 '''
             }
         }
