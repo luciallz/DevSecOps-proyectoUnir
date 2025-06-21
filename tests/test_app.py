@@ -29,7 +29,7 @@ def test_suma(client):
     # Caso con decimales
     response = client.post("/suma", json={"a": 3.5, "b": 4.2})
     assert response.status_code == 200
-    assert pytest.approx(response.get_json()["resultado"]) == 7.7
+    assert response.get_json()["resultado"] == pytest.approx(7.7)
 
     # Caso con un parámetro faltante
     response = client.post("/suma", json={"a": 3})
