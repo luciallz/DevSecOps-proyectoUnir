@@ -62,7 +62,7 @@ pipeline {
                         ${scannerHome}/bin/sonar-scanner \
                         -Dsonar.projectKey=${PROJECT_KEY} \
                         -Dsonar.sources=src \
-                        -Dsonar.python.coverage.reportPaths=coverage.xml \
+                        -Dsonar.javascript.lcov.reportPaths=coverage.lcov \
                         -Dsonar.inclusions=**/*.py \
                         -Dsonar.exclusions=**/templates/**,**/static/**,**/node_modules/**,**/*.min.js,**/*.test.*,**/__pycache__/**,**/tests/**
                     """
