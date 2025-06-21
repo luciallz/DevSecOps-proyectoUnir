@@ -45,7 +45,9 @@ pipeline {
         stage('Run Tests with Coverage') {
             steps {
                 sh '''
-                    bash -c "source venv/bin/activate && PYTHONPATH=src pytest --cov=src --cov-report=xml"
+                    source venv/bin/activate
+                    coverage run -m pytest src/tests
+                    coverage xml -o coverage.xml
                 '''
             }
         }
