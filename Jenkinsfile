@@ -64,7 +64,6 @@ pipeline {
                         -Dsonar.sources=src \
                         -Dsonar.tests=src/tests \
                         -Dsonar.python.coverage.reportPaths=coverage.xml \
-                        -Dsonar.inclusions=**/*.py \
                         -Dsonar.exclusions=**/templates/**,**/static/**,**/node_modules/**,**/*.min.js,**/__pycache__/**
                     """
                 }
