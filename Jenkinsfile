@@ -45,8 +45,8 @@ pipeline {
         stage('Run Tests with Coverage') {
             steps {
                 sh '''
-                    . venv/bin/activate
-                    PYTHONPATH=src coverage run -m pytest src/tests
+                    . venv/bin/activate && \
+                    PYTHONPATH=src coverage run -m pytest src/tests && \
                     coverage xml -o coverage.xml
                 '''
             }
@@ -62,9 +62,9 @@ pipeline {
                         ${scannerHome}/bin/sonar-scanner \
                         -Dsonar.projectKey=${PROJECT_KEY} \
                         -Dsonar.sources=src \
-                        -Dsonar.javascript.lcov.reportPaths=coverage.lcov \
+                        -Dsonar.python.coverage.reportPaths=coverage.xml \
                         -Dsonar.inclusions=**/*.py \
-                        -Dsonar.exclusions=**/templates/**,**/static/**,**/node_modules/**,**/*.min.js,**/*.test.*,**/__pycache__/**,**/tests/**
+                        -Dsonar.exclusions=**/templates/**,**/static/**,**/node_modules/**,**/*.min.js,**/*.test.*,**/__pycache__/**
                     """
                 }
             }
