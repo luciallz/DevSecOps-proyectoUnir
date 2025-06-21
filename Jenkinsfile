@@ -39,24 +39,16 @@ pipeline {
 
         stage('Run Tests with Coverage') {
             steps {
-                sh '''
-                . venv/bin/activate
-                
-                # Crear directorio para reportes
-                mkdir -p test-reports
-                
-                # Ejecutar pruebas con configuración robusta
-                PYTHONPATH=${WORKSPACE} pytest \
-                    tests/ \
-                    --junitxml=test-reports/results.xml \
-                    --cov=. \
-                    --cov-report=xml:coverage.xml \
-                    --cov-fail-under=80 \
-                    -v
-                
-                # Verificar que se generaron los archivos
-                ls -la coverage.xml test-reports/results.xml
-                '''
+                withEnv(['FLASK_ENV=test']) {
+                    sh '''
+                        . venv/bin/activate
+                        PYTHONPATH=. pytest tests/ \
+                            --junitxml=test-reports/results.xml \
+                            --cov=. \
+                            --cov-report=xml:coverage.xml \
+                            --cov-fail-under=80 -v
+                    '''
+                }
             }
         }
         stage('SonarQube Analysis') {

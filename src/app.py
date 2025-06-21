@@ -12,7 +12,8 @@ app = Flask(__name__)
 app.config['JSON_SORT_KEYS'] = False  # Mejor para APIs
 
 # Seguridad
-if os.environ.get('FLASK_ENV') == 'test':
+is_testing = os.environ.get('FLASK_ENV') == 'test' or 'pytest' in sys.modules
+if is_testing:
     Talisman(app, force_https=False, strict_transport_security=False)
 else:
     CORS(app, resources={r"/*": {"origins": os.environ.get('ALLOWED_ORIGINS', '').split(',')}})
