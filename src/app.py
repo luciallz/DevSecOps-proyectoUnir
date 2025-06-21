@@ -11,17 +11,93 @@ app = Flask(__name__)
 
 # Configuración básica de seguridad
 app.config['JSON_SORT_KEYS'] = False  # Mejor para APIs
-app.config['WTF_CSRF_ENABLED'] = False
 
-# Seguridad
+# Configuración CSRF solo si es necesario para APIs (usar token en headers para formularios)
+app.config['WTF_CSRF_ENABLED'] = True  # Habilitar CSRF por defecto es más seguro
+app.config['WTF_CSRF_CHECK_DEFAULT'] = True
+app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # 1 hora de validez para tokens CSRF
+
 # Seguridad
 is_testing = os.environ.get('FLASK_ENV') == 'test' or 'pytest' in sys.modules
+is_development = os.environ.get('FLASK_ENV') == 'development'
 
 if is_testing:
+    # Configuración menos estricta para testing
+    app.config['WTF_CSRF_ENABLED'] = False  # Solo deshabilitar CSRF para testing
     Talisman(app, force_https=False, strict_transport_security=False)
 else:
-    CORS(app, resources={r"/*": {"origins": os.environ.get('ALLOWED_ORIGINS', '').split(',')}})
-    Talisman(app, force_https=True, strict_transport_security=True)
+    # Configuración de producción/desarrollo
+    CORS(app, resources={
+        r"/*": {
+            "origins": os.environ.get('ALLOWED_ORIGINS', '').split(','),
+            "supports_credentials": True
+        }
+    })
+    
+    # Configuración de Talisman con políticas de seguridad robustas
+    talisman_config = {
+        'force_https': True,
+        'force_https_permanent': True,
+        'strict_transport_security': True,
+        'strict_transport_security_max_age': 31536000,  # 1 año
+        'strict_transport_security_include_subdomains': True,
+        'strict_transport_security_preload': True,
+        'content_security_policy': {
+            'default-src': "'self'",
+            'script-src': "'self' 'unsafe-inline'",  # Considerar eliminar unsafe-inline
+            'style-src': "'self' 'unsafe-inline'",
+            'img-src': "'self' data:",
+            'connect-src': "'self'",
+            'frame-ancestors': "'none'",
+            'form-action': "'self'"
+        }
+    }
+    
+    Talisman(app, **talisman_config)# Configuración básica de seguridad
+app.config['JSON_SORT_KEYS'] = False  # Mejor para APIs
+
+# Configuración CSRF solo si es necesario para APIs (usar token en headers para formularios)
+app.config['WTF_CSRF_ENABLED'] = True  # Habilitar CSRF por defecto es más seguro
+app.config['WTF_CSRF_CHECK_DEFAULT'] = True
+app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # 1 hora de validez para tokens CSRF
+
+# Seguridad
+is_testing = os.environ.get('FLASK_ENV') == 'test' or 'pytest' in sys.modules
+is_development = os.environ.get('FLASK_ENV') == 'development'
+
+if is_testing:
+    # Configuración menos estricta para testing
+    app.config['WTF_CSRF_ENABLED'] = False  # Solo deshabilitar CSRF para testing
+    Talisman(app, force_https=False, strict_transport_security=False)
+else:
+    # Configuración de producción/desarrollo
+    CORS(app, resources={
+        r"/*": {
+            "origins": os.environ.get('ALLOWED_ORIGINS', '').split(','),
+            "supports_credentials": True
+        }
+    })
+    
+    # Configuración de Talisman con políticas de seguridad robustas
+    talisman_config = {
+        'force_https': True,
+        'force_https_permanent': True,
+        'strict_transport_security': True,
+        'strict_transport_security_max_age': 31536000,  # 1 año
+        'strict_transport_security_include_subdomains': True,
+        'strict_transport_security_preload': True,
+        'content_security_policy': {
+            'default-src': "'self'",
+            'script-src': "'self' 'unsafe-inline'",  # Considerar eliminar unsafe-inline
+            'style-src': "'self' 'unsafe-inline'",
+            'img-src': "'self' data:",
+            'connect-src': "'self'",
+            'frame-ancestors': "'none'",
+            'form-action': "'self'"
+        }
+    }
+    
+    Talisman(app, **talisman_config)
 
 # Configuración de logging
 handler = RotatingFileHandler('app.log', maxBytes=10000, backupCount=3)
