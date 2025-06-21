@@ -51,6 +51,12 @@ pipeline {
                 '''
             }
         }
+        stage('Debug Coverage Report') {
+            steps {
+                sh 'ls -l coverage.xml'
+                sh 'head -40 coverage.xml'
+            }
+        }
 
         stage('SonarQube Analysis') {
             environment {
