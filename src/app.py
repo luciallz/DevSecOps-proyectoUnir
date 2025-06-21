@@ -59,19 +59,26 @@ else:
         }
     })
     
+    SELF = "'self'"
+    NONE = "'none'"
+    UNSAFE_INLINE = "'unsafe-inline'"
+    DATA_SRC = "data:"
+
     # Política de seguridad de contenido (CSP) estricta
     csp = {
-        'default-src': "'self'",
-        'script-src': ["'self'"],
-        'style-src': ["'self'", "'unsafe-inline'"],  # Idealmente eliminar unsafe-inline
-        'img-src': ["'self'", "data:"],
-        'connect-src': ["'self'"] + allowed_origins,
-        'frame-ancestors': "'none'",
-        'form-action': "'self'",
-        'base-uri': "'self'",
-        'object-src': "'none'"
+        'default-src': SELF,
+        'script-src': [SELF],
+        'style-src': [SELF, UNSAFE_INLINE],  # Idealmente eliminar unsafe-inline
+        'img-src': [SELF, DATA_SRC],
+        'connect-src': [SELF] + allowed_origins,
+        'frame-ancestors': NONE,
+        'form-action': SELF,
+        'base-uri': SELF,
+        'object-src': NONE,
+        'font-src': [SELF],  # Added for completeness
+        'media-src': [SELF]  # Added for completeness
     }
-    
+
     # Configuración Talisman reforzada
     Talisman(
         app,
