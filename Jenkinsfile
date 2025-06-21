@@ -78,24 +78,41 @@ pipeline {
             steps {
                 script {
                     try {
+                        // Instalar Dependency-Check si no existe
+                        sh '''
+                        if [ ! -f /opt/dependency-check/bin/dependency-check.sh ]; then
+                            echo "Instalando OWASP Dependency-Check..."
+                            sudo mkdir -p /opt/dependency-check
+                            sudo wget -q -O /tmp/dc.zip https://github.com/jeremylong/DependencyCheck/releases/latest/download/dependency-check-release.zip
+                            sudo unzip -j /tmp/dc.zip "dependency-check/bin/*" -d /opt/dependency-check/bin/
+                            sudo unzip -j /tmp/dc.zip "dependency-check/lib/*" -d /opt/dependency-check/lib/
+                            sudo chmod +x /opt/dependency-check/bin/dependency-check.sh
+                            sudo rm /tmp/dc.zip
+                        fi
+                        '''
+                        
+                        // Ejecutar análisis
                         sh '''
                         mkdir -p dependency-check-reports
-                        dependency-check --scan . \
+                        /opt/dependency-check/bin/dependency-check.sh \
+                            --scan . \
                             --format HTML \
                             --format XML \
                             --out dependency-check-reports/ \
                             --disableAssembly
                         '''
+                        
+                        // Publicar resultados
                         dependencyCheck pattern: 'dependency-check-reports/dependency-check-report.xml'
                         archiveArtifacts artifacts: 'dependency-check-reports/*'
-                    } catch (e) {
-                        echo "Dependency-Check failed: ${e}"
+                        
+                    } catch (Exception e) {
+                        echo "Error en Dependency-Check: ${e.toString()}"
                         currentBuild.result = 'UNSTABLE'
                     }
                 }
             }
         }
-
         stage('DAST with OWASP ZAP') {
             steps {
                 script {
