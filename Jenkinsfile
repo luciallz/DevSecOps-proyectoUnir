@@ -47,7 +47,7 @@ pipeline {
                     ${SONAR_SCANNER_HOME}/bin/sonar-scanner \
                         -Dsonar.projectKey=DevSecOps-proyectoUnir \
                         -Dsonar.python.version=${PYTHON_VERSION} \
-                        -Dsonar.sources=src \
+                        -Dsonar.sources=. \  # <-- Cambiado a directorio raíz
                         -Dsonar.tests=tests \
                         -Dsonar.python.coverage.reportPaths=coverage.xml \
                         -Dsonar.python.xunit.reportPath=test-reports/results.xml
