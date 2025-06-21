@@ -46,7 +46,7 @@ pipeline {
             steps {
                 sh '''
                     . venv/bin/activate && \
-                    PYTHONPATH=src coverage run -m pytest src/tests && \
+                    PYTHONPATH=src coverage run -m pytest tests && \
                     coverage xml -o coverage.xml
                 '''
             }
