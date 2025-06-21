@@ -3,13 +3,14 @@ from functools import wraps
 import logging
 from logging.handlers import RotatingFileHandler
 import os
+from flask_talisman import Talisman
 
 app = Flask(__name__)
 
 # Configuración básica de seguridad
 app.config['JSON_SORT_KEYS'] = False  # Mejor para APIs
-app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', 'dev-secret-key')  # Cambiar en producción
-
+app.config['SECRET_KEY'] = os.environ['FLASK_SECRET_KEY']  # Cambiar en producción
+Talisman(app, force_https=True)
 # Configuración de logging
 handler = RotatingFileHandler('app.log', maxBytes=10000, backupCount=3)
 handler.setLevel(logging.INFO)
