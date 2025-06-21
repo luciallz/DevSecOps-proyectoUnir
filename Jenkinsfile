@@ -45,10 +45,9 @@ pipeline {
         stage('Run Tests with Coverage') {
             steps {
                 sh '''
-                    source venv/bin/activate
-                    coverage run -m pytest src/tests
-                    coverage xml -o coverage.xml
+                    bash -c "source venv/bin/activate && coverage run -m pytest src/tests && coverage xml -o coverage.xml"
                 '''
+
             }
         }
 
