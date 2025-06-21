@@ -31,7 +31,8 @@ pipeline {
                 sh '''
                 . venv/bin/activate
                 mkdir -p test-reports
-                PYTHONPATH=. pytest tests/ \
+                export PYTHONPATH=$PWD
+                pytest tests/ \
                     --junitxml=test-reports/results.xml \
                     --cov=. \
                     --cov-report=xml:coverage.xml \
