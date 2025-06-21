@@ -13,7 +13,7 @@ app.config['JSON_SORT_KEYS'] = False  # Mejor para APIs
 
 # Seguridad
 if os.environ.get('FLASK_ENV') == 'test':
-    Talisman(app, force_https=False)
+    Talisman(app, force_https=False, strict_transport_security=False)
 else:
     CORS(app, resources={r"/*": {"origins": os.environ.get('ALLOWED_ORIGINS', '').split(',')}})
     Talisman(app, force_https=True, strict_transport_security=True)

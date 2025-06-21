@@ -9,10 +9,10 @@ from app import app
 
 @pytest.fixture
 def client():
-    """Fixture para crear un cliente de prueba"""
     app.config['TESTING'] = True
     with app.test_client() as client:
-        yield client
+        with app.app_context():
+            yield client
 
 def test_home_page(client):
     """Test para la ruta principal"""
