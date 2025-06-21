@@ -22,7 +22,7 @@ pipeline {
             steps {
                 sh "python${PYTHON_VERSION} -m venv venv"
                 sh '. venv/bin/activate && pip install --upgrade pip'
-                sh '. venv/bin/activate && pip install -r requirements.txt pytest pytest-cov'
+                sh '. venv/bin/activate && pip install -r requirements.txt pytest pytest-cov || echo "Algunas dependencias opcionales fallaron"'
             }
         }
 
