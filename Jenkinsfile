@@ -67,19 +67,18 @@ pipeline {
                         -Dsonar.exclusions=**/templates/**,**/static/**,**/node_modules/**,**/*.min.js,**/*.test.*,**/__pycache__/**,**/tests/**
                     """
                 }
-                timeout(time: 30, unit: 'MINUTES') {
-                    def qg = waitForQualityGate()
-                    if (qg.status != 'OK') {
-                        error "Pipeline aborted due to quality gate failure: ${qg.status}"
-                    }
-                }
             }
         }
 
         stage('Quality Gate') {
             steps {
-                timeout(time: 25, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
+                timeout(time: 30, unit: 'MINUTES') {
+                    script {
+                        def qg = waitForQualityGate()
+                        if (qg.status != 'OK') {
+                            error "Pipeline aborted due to quality gate failure: ${qg.status}"
+                        }
+                    }
                 }
             }
         }
