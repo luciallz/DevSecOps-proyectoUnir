@@ -4,16 +4,20 @@ import logging
 from logging.handlers import RotatingFileHandler
 import os
 from flask_talisman import Talisman
+from flask_cors import CORS
 
 app = Flask(__name__)
 
 # Configuración básica de seguridad
 app.config['JSON_SORT_KEYS'] = False  # Mejor para APIs
-app.config['SECRET_KEY'] = os.environ['FLASK_SECRET_KEY']
+
+# Seguridad
 if os.environ.get('FLASK_ENV') == 'test':
-    Talisman(app, force_https=False)  # Desactiva HTTPS para tests
+    Talisman(app, force_https=False)
 else:
-    Talisman(app, force_https=True) 
+    CORS(app, resources={r"/*": {"origins": os.environ.get('ALLOWED_ORIGINS', '').split(',')}})
+    Talisman(app, force_https=True, strict_transport_security=True)
+
 # Configuración de logging
 handler = RotatingFileHandler('app.log', maxBytes=10000, backupCount=3)
 handler.setLevel(logging.INFO)
@@ -76,7 +80,7 @@ def suma(a, b):
         app.logger.error(f'Error en suma: {str(e)}')
         return jsonify({"error": "Error interno procesando la solicitud"}), 500
 
-@app.route("/resta", methods=["POST"])
+@app.route('/resta', methods=['POST'])
 @validate_json_content
 @validate_numbers_input
 def resta(a, b):
