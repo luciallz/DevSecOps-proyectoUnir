@@ -8,6 +8,16 @@ from flask_cors import CORS
 import sys
 import secrets
 
+# Importar constantes de seguridad
+try:
+    from src.security_constants import SELF, NONE, UNSAFE_INLINE, DATA_SRC
+except ImportError:
+    # Definiciones alternativas si el archivo no existe
+    SELF = "'self'"
+    NONE = "'none'"
+    UNSAFE_INLINE = "'unsafe-inline'"
+    DATA_SRC = "data:"
+
 app = Flask(__name__)
 
 # Configuración básica de seguridad
@@ -31,39 +41,35 @@ if is_production:
     app.debug = False
     app.config['PROPAGATE_EXCEPTIONS'] = True
 
+# Definir allowed_origins antes de usarlo en CORS
+allowed_origins = [o.strip() for o in os.environ.get('ALLOWED_ORIGINS', '').split(',') if o.strip()]
+
+# Configuración CORS segura
+CORS(app, resources={
+    r"/*": {
+        "origins": allowed_origins,
+        "supports_credentials": False,
+        "allow_headers": ["Content-Type", "Authorization"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "expose_headers": [],
+        "max_age": 86400
+    }
+})
+
 # Configuración de seguridad por entorno
 if is_testing:
     # Configuración para testing (con logging explícito)
-    app.logger.warning("Modo testing - configuracion de seguridad reducida")
+    app.logger.warning("Modo testing - configuración de seguridad reducida")
     Talisman(app, 
              force_https=False, 
              strict_transport_security=False,
              content_security_policy=None)
 else:
-    # Configuración CORS segura
-    allowed_origins = [o.strip() for o in os.environ.get('ALLOWED_ORIGINS', '').split(',') if o.strip()]
-    
     # Validación estricta de origenes permitidos
     if is_production:
         if not all(o.startswith('https://') for o in allowed_origins):
             raise ValueError("En producción, todos los origenes deben usar HTTPS")
     
-    CORS(app, resources={
-        r"/*": {
-            "origins": allowed_origins,
-            "supports_credentials": False,
-            "allow_headers": ["Content-Type", "Authorization"],
-            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-            "expose_headers": [],
-            "max_age": 86400
-        }
-    })
-    
-    SELF = "'self'"
-    NONE = "'none'"
-    UNSAFE_INLINE = "'unsafe-inline'"
-    DATA_SRC = "data:"
-
     # Política de seguridad de contenido (CSP) estricta
     csp = {
         'default-src': SELF,
@@ -74,11 +80,9 @@ else:
         'frame-ancestors': NONE,
         'form-action': SELF,
         'base-uri': SELF,
-        'object-src': NONE,
-        'font-src': [SELF],  # Added for completeness
-        'media-src': [SELF]  # Added for completeness
+        'object-src': NONE
     }
-
+    
     # Configuración Talisman reforzada
     Talisman(
         app,
@@ -96,6 +100,41 @@ else:
         session_cookie_samesite='Lax'
     )
 
+def setup_security(app, is_production, allowed_origins):
+    """Configuración centralizada de seguridad con testing más fácil"""
+
+    # Política de seguridad de contenido (CSP) modular
+    csp = create_csp_policy(allowed_origins)
+
+    # Solo aplicar Talisman en producción
+    if is_production:
+        configure_talisman(app, csp)
+
+def create_csp_policy(allowed_origins):
+    """Factory para CSP que facilita testing"""
+    return {
+        'default-src': SELF,
+        'script-src': [SELF],
+        'style-src': [SELF, UNSAFE_INLINE],
+        'img-src': [SELF, DATA_SRC],
+        'connect-src': [SELF] + (allowed_origins or []),
+        'frame-ancestors': NONE,
+        'form-action': SELF,
+        'base-uri': SELF,
+        'object-src': NONE
+    }
+
+def configure_talisman(app, csp):
+    """Configura Talisman de forma testeable"""
+    Talisman(
+        app,
+        force_https=True,
+        force_https_permanent=True,
+        strict_transport_security=True,
+        strict_transport_security_max_age=31536000,
+        content_security_policy=csp,
+        session_cookie_secure=True
+    )
 
 def validate_json_content(f):
     """Decorador para validar contenido JSON"""

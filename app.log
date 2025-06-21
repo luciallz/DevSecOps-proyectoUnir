@@ -98,3 +98,11 @@ Método no permitido: GET en /suma
 2025-06-21 20:48:44,983 - app - WARNING - Valores no numéricos recibidos
 2025-06-21 20:48:44,986 - app - WARNING - Intento de acceso a ruta no existente: /ruta-inexistente
 2025-06-21 20:48:44,989 - app - WARNING - Método no permitido: GET en /suma
+2025-06-21 20:55:54,474 - app - WARNING - Modo testing - configuracion de seguridad reducida
+2025-06-21 21:00:39,174 - app - WARNING - Modo testing - configuracion de seguridad reducida
+2025-06-21 21:03:58,211 - app - WARNING - Modo testing - configuración de seguridad reducida
+2025-06-21 21:03:58,235 - app - WARNING - Parámetros faltantes
+2025-06-21 21:03:58,238 - app - WARNING - Intento de acceso sin JSON
+2025-06-21 21:03:58,240 - app - WARNING - Valores no numéricos recibidos
+2025-06-21 21:03:58,243 - app - WARNING - Intento de acceso a ruta no existente: /ruta-inexistente
+2025-06-21 21:03:58,246 - app - WARNING - Método no permitido: GET en /suma
