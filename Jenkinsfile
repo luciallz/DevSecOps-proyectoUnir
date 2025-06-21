@@ -3,6 +3,7 @@ pipeline {
     environment {
         SONAR_SCANNER_HOME = tool 'SonarQubeScanner'
         PYTHON_VERSION = '3.11'
+        FLASK_SECRET_KEY = credentials('FLASK_SECRET_KEY')
     }
 
     stages {
