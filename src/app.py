@@ -1,23 +1,26 @@
-from flask import Flask, jsonify, request
-from functools import wraps
-import logging
-from logging.handlers import RotatingFileHandler
-import os
+from flask import Flask
 from flask_talisman import Talisman
 from flask_cors import CORS
+import os
+import sys
 
 app = Flask(__name__)
 
 # Configuración básica de seguridad
 app.config['JSON_SORT_KEYS'] = False  # Mejor para APIs
+app.config['WTF_CSRF_ENABLED'] = False
 
 # Seguridad
 is_testing = os.environ.get('FLASK_ENV') == 'test' or 'pytest' in sys.modules
-if is_testing:
-    Talisman(app, force_https=False, strict_transport_security=False)
-else:
-    CORS(app, resources={r"/*": {"origins": os.environ.get('ALLOWED_ORIGINS', '').split(',')}})
-    Talisman(app, force_https=True, strict_transport_security=True)
+Talisman(
+    app,
+    force_https=not is_testing,
+    strict_transport_security=not is_testing
+)
+
+# CORS (if applicable)
+if not is_testing:
+    CORS(app, resources={r"/*": {"origins": os.environ.get('ALLOWED_ORIGINS', '').split(',')}})True)
 
 # Configuración de logging
 handler = RotatingFileHandler('app.log', maxBytes=10000, backupCount=3)
