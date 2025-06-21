@@ -4,26 +4,36 @@ USER root
 
 # Todas las operaciones en un solo RUN para minimizar capas
 RUN apt-get update && \
-    apt-get install -y \
+    apt-get install -y --no-install-recommends \
         apt-transport-https \
         ca-certificates \
         curl \
-        docker-ce-cli \
         gnupg2 \
+        software-properties-common && \
+    # Verificar fingerprint de la clave GPG de Docker (mejor práctica de seguridad)
+    mkdir -p /usr/share/keyrings && \
+    curl --fail --show-error --silent --location https://download.docker.com/linux/debian/gpg | \
+    gpg --batch --no-default-keyring --keyring /usr/share/keyrings/docker-archive-keyring.gpg --dearmor && \
+    # Verificar que el fingerprint coincida con el oficial (añade seguridad)
+    gpg --no-default-keyring --keyring /usr/share/keyrings/docker-archive-keyring.gpg --fingerprint | \
+    grep -q "9DC8 5822 9FC7 DD38 854A  E2D8 8D81 803C 0EBF CD88" && \
+    # Configurar repositorio de Docker con HTTPS
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list && \
+    # Instalar el resto de paquetes
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        docker-ce-cli \
         python3 \
         python3-pip \
         python3-venv \
-        software-properties-common \
         zaproxy && \
-    # Configurar repositorio de Docker
-    curl --fail --show-error --silent --location https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg && \
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list && \
     # Limpieza final
-    apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
     # Configurar grupo docker
     groupadd -g 136 docker && \
-    usermod -aG docker jenkins
+    usermod -aG docker jenkins && \
+    # Asegurar permisos en el keyring
+    chmod 644 /usr/share/keyrings/docker-archive-keyring.gpg
 
 USER jenkins
