@@ -10,7 +10,10 @@ app = Flask(__name__)
 # Configuración básica de seguridad
 app.config['JSON_SORT_KEYS'] = False  # Mejor para APIs
 app.config['SECRET_KEY'] = os.environ['FLASK_SECRET_KEY']
-Talisman(app, force_https=True)
+if os.environ.get('FLASK_ENV') == 'test':
+    Talisman(app, force_https=False)  # Desactiva HTTPS para tests
+else:
+    Talisman(app, force_https=True) 
 # Configuración de logging
 handler = RotatingFileHandler('app.log', maxBytes=10000, backupCount=3)
 handler.setLevel(logging.INFO)
@@ -51,7 +54,7 @@ def home():
     app.logger.info('Acceso a ruta principal')
     return "¡Hola desde Flask!"
 
-@app.route("/suma", methods=["POST"])
+@app.route('/suma', methods=['POST'])
 @validate_json_content
 @validate_numbers_input
 def suma(a, b):
