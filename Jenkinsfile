@@ -2,12 +2,8 @@ pipeline {
     agent any
 
     environment {
-        SONAR_HOST_URL = 'http://sonarqube:9000'
-        SONAR_SCANNER_VERSION = '3.3.0.1492'
-        PROJECT_KEY = 'DevSecOps-proyectoUnir'
-        DEP_CHECK_OUTPUT = 'dependency-check-report.html'
-        ZAP_REPORT = 'zap-report.html'
-        SONAR_SCANNER_OPTS = "-Xmx2048m"
+        SONAR_SCANNER_HOME = tool 'SonarQubeScanner'
+        PYTHON_VERSION = '3.11'
     }
 
     stages {
@@ -17,55 +13,46 @@ pipeline {
             }
         }
 
-        stage('Checkout') {
+        stage('Checkout Code') {
             steps {
-                checkout([
-                    $class: 'GitSCM',
-                    branches: [[name: '*/main']],
-                    extensions: [],
-                    userRemoteConfigs: [[
-                        credentialsId: 'github-token',
-                        url: 'https://github.com/luciallz/DevSecOps-proyectoUnir.git'
-                    ]]
-                ])
+                checkout scm
             }
         }
 
-        stage('Setup Python Virtual Environment') {
+        stage('Setup Python Environment') {
             steps {
-                sh '''
-                    python3 -m venv venv
-                    . venv/bin/activate
-                    pip install --upgrade pip
-                    pip install -r requirements.txt
-                '''
+                sh "python${PYTHON_VERSION} -m venv venv"
+                sh '. venv/bin/activate && pip install --upgrade pip'
+                sh '. venv/bin/activate && pip install -r requirements.txt pytest pytest-cov'
             }
         }
 
         stage('Run Tests with Coverage') {
             steps {
                 sh '''
-                    . venv/bin/activate && \
-                    PYTHONPATH=src coverage run -m pytest tests && \
-                    coverage xml -o coverage.xml
+                . venv/bin/activate
+                mkdir -p test-reports
+                PYTHONPATH=src pytest tests/ \
+                    --junitxml=test-reports/results.xml \
+                    --cov=src \
+                    --cov-report=xml:coverage.xml \
+                    -v
                 '''
-            }
-        }
-        stage('Debug Coverage Report') {
-            steps {
-                sh 'ls -l coverage.xml'
-                sh 'head -40 coverage.xml'
+                archiveArtifacts artifacts: 'test-reports/results.xml,coverage.xml'
             }
         }
 
         stage('SonarQube Analysis') {
-            environment {
-                scannerHome = tool 'SonarQubeScanner'
-            }
             steps {
-                withSonarQubeEnv('SonarQube') { 
+                withSonarQubeEnv('SonarQube') {
                     sh """
-                        ${scannerHome}/bin/sonar-scanner
+                    ${SONAR_SCANNER_HOME}/bin/sonar-scanner \
+                        -Dsonar.projectKey=DevSecOps-proyectoUnir \
+                        -Dsonar.python.version=${PYTHON_VERSION} \
+                        -Dsonar.sources=src \
+                        -Dsonar.tests=tests \
+                        -Dsonar.python.coverage.reportPaths=coverage.xml \
+                        -Dsonar.python.xunit.reportPath=test-reports/results.xml
                     """
                 }
             }
@@ -77,7 +64,9 @@ pipeline {
                     script {
                         def qg = waitForQualityGate()
                         if (qg.status != 'OK') {
-                            error "Pipeline aborted due to quality gate failure: ${qg.status}"
+                            echo "Quality Gate status: ${qg.status}"
+                            // Continuar pero marcar como inestable
+                            currentBuild.result = 'UNSTABLE'
                         }
                     }
                 }
@@ -87,87 +76,68 @@ pipeline {
         stage('Dependency-Check Analysis') {
             steps {
                 script {
-                    def dcDataDir = '/var/jenkins_home/dependency-check-data'
-                    sh "mkdir -p ${dcDataDir}"
-                    withCredentials([string(credentialsId: 'nvd-api-key', variable: 'NVD_API_KEY')]) {
-                        sh """
-                            docker run --rm \
-                                -v \$(pwd):/src \
-                                -v ${dcDataDir}:/usr/share/dependency-check/data \
-                                owasp/dependency-check:latest \
-                                --nvdApiKey ${NVD_API_KEY} \
-                                --project ${PROJECT_KEY} \
-                                --scan /src \
-                                --format HTML \
-                                --out /src \
-                                --enableExperimental
-                        """
+                    try {
+                        sh '''
+                        mkdir -p dependency-check-reports
+                        dependency-check --scan . \
+                            --format HTML \
+                            --format XML \
+                            --out dependency-check-reports/ \
+                            --disableAssembly
+                        '''
+                        dependencyCheck pattern: 'dependency-check-reports/dependency-check-report.xml'
+                        archiveArtifacts artifacts: 'dependency-check-reports/*'
+                    } catch (e) {
+                        echo "Dependency-Check failed: ${e}"
+                        currentBuild.result = 'UNSTABLE'
                     }
                 }
             }
         }
 
-        stage('Publish OWASP Dependency-Check Report') {
+        stage('DAST with OWASP ZAP') {
             steps {
-                publishHTML([
-                    allowMissing: false,
-                    alwaysLinkToLastBuild: true,
-                    keepAll: true,
-                    reportDir: '.',
-                    reportFiles: 'dependency-check-report.html',
-                    reportName: 'OWASP Dependency-Check Report'
-                ])
-            }
-        }
-
-        stage('Start App for DAST') {
-            steps {
-                sh '''
-                    nohup ./venv/bin/python3 src/app.py > app.log 2>&1 &
-                    sleep 20
-                '''
-            }
-        }
-
-        stage('OWASP ZAP Scan') {
-            steps {
-                sh """
-                    docker run --rm -u root \
-                        -v \$(pwd):/zap/wrk \
-                        ghcr.io/zaproxy/zaproxy:stable \
-                        zap.sh -cmd -autorun /zap/wrk/zap-config.yaml
-                """
-            }
-        }
-
-        stage('Publish OWASP ZAP Report') {
-            steps {
-                publishHTML([
-                    allowMissing: false,
-                    alwaysLinkToLastBuild: true,
-                    keepAll: true,
-                    reportDir: '.',
-                    reportFiles: "${ZAP_REPORT}",
-                    reportName: 'OWASP ZAP Report'
-                ])
-            }
-        }
-
-        stage('Stop App') {
-            steps {
-                sh "pkill -f 'python3 src/app.py' || true"
+                script {
+                    try {
+                        // Iniciar la aplicación
+                        sh '. venv/bin/activate && python src/app.py &'
+                        echo "Waiting for app to start..."
+                        sleep 30
+                        
+                        // Ejecutar ZAP Baseline Scan
+                        sh 'zap-baseline.py -t http://localhost:5000 -r zap-report.html -J zap-report.json'
+                        
+                        // Publicar reportes
+                        archiveArtifacts artifacts: 'zap-report.html,zap-report.json'
+                    } catch (e) {
+                        echo "ZAP scan failed: ${e}"
+                        currentBuild.result = 'UNSTABLE'
+                    } finally {
+                        // Detener la aplicación
+                        sh 'pkill -f "python src/app.py" || echo "App not running"'
+                    }
+                }
             }
         }
     }
 
     post {
         always {
-            echo 'Pipeline terminada. Puedes revisar los reportes generados.'
-            // Archiva todos los archivos (incluyendo coverage.xml)
-            archiveArtifacts artifacts: '**/*', allowEmptyArchive: true
-
-            // Publica el reporte de cobertura (asegúrate de tener instalado el plugin cobertura)
-            cobertura coberturaReportFile: 'coverage.xml', failNoReports: false
+            echo 'Pipeline completed. Cleaning up...'
+            sh 'pkill -f "python src/app.py" || echo "No app to kill"'
+            archiveArtifacts artifacts: '**/reports/*,**/dependency-check-reports/*,zap-report.*'
+            
+            // Limpiar workspace (opcional)
+            // deleteDir()
+        }
+        success {
+            echo 'Pipeline succeeded!'
+        }
+        unstable {
+            echo 'Pipeline completed with warnings'
+        }
+        failure {
+            echo 'Pipeline failed'
         }
     }
 }

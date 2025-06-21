@@ -1,63 +1,113 @@
 from flask import Flask, jsonify, request
+from functools import wraps
+import logging
+from logging.handlers import RotatingFileHandler
+import os
 
 app = Flask(__name__)
 
+# Configuración básica de seguridad
+app.config['JSON_SORT_KEYS'] = False  # Mejor para APIs
+app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', 'dev-secret-key')  # Cambiar en producción
+
+# Configuración de logging
+handler = RotatingFileHandler('app.log', maxBytes=10000, backupCount=3)
+handler.setLevel(logging.INFO)
+app.logger.addHandler(handler)
+
+def validate_json_content(f):
+    """Decorador para validar contenido JSON"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not request.is_json:
+            app.logger.warning('Intento de acceso sin JSON')
+            return jsonify({"error": "Content-Type debe ser application/json"}), 400
+        return f(*args, **kwargs)
+    return decorated_function
+
+def validate_numbers_input(f):
+    """Decorador para validar entrada numérica"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        data = request.get_json()
+        if not data or 'a' not in data or 'b' not in data:
+            app.logger.warning('Parámetros faltantes')
+            return jsonify({"error": "Se requieren los parámetros 'a' y 'b'"}), 400
+        
+        try:
+            a = float(data['a'])
+            b = float(data['b'])
+        except (ValueError, TypeError):
+            app.logger.warning('Valores no numéricos recibidos')
+            return jsonify({"error": "Los valores deben ser números válidos"}), 400
+            
+        return f(a, b, *args, **kwargs)
+    return decorated_function
+
 @app.route("/")
 def home():
-    """
-    Ruta principal que devuelve un saludo.
-    """
+    """Ruta principal que devuelve un saludo."""
+    app.logger.info('Acceso a ruta principal')
     return "¡Hola desde Flask!"
 
 @app.route("/suma", methods=["POST"])
-def suma():
+@validate_json_content
+@validate_numbers_input
+def suma(a, b):
     """
     Suma dos números enviados en formato JSON.
     
-    JSON esperado:
-    {
-        "a": número,
-        "b": número
-    }
-
-    Devuelve:
-    {
-        "resultado": suma de a y b
-    }
+    JSON esperado: {"a": número, "b": número}
+    Devuelve: {"resultado": suma de a y b}
     """
-    data = request.get_json()
-    a = data.get("a")
-    b = data.get("b")
-    if not isinstance(a, (int, float)) or not isinstance(b, (int, float)):
-        return jsonify({"error": "Los valores deben ser números"}), 400
-
-    resultado = a + b
-    return jsonify({"resultado": resultado})
+    try:
+        resultado = a + b
+        app.logger.info(f'Operación suma exitosa: {a} + {b} = {resultado}')
+        return jsonify({
+            "operacion": "suma",
+            "resultado": resultado,
+            "status": "exito"
+        })
+    except Exception as e:
+        app.logger.error(f'Error en suma: {str(e)}')
+        return jsonify({"error": "Error interno procesando la solicitud"}), 500
 
 @app.route("/resta", methods=["POST"])
-def resta():
+@validate_json_content
+@validate_numbers_input
+def resta(a, b):
     """
     Resta dos números enviados en formato JSON.
     
-    JSON esperado:
-    {
-        "a": número,
-        "b": número
-    }
-
-    Devuelve:
-    {
-        "resultado": resta de a menos b
-    }
+    JSON esperado: {"a": número, "b": número}
+    Devuelve: {"resultado": resta de a menos b}
     """
-    data = request.get_json()
-    a = data.get("a")
-    b = data.get("b")
-    if not isinstance(a, (int, float)) or not isinstance(b, (int, float)):
-        return jsonify({"error": "Los valores deben ser números"}), 400
+    try:
+        resultado = a - b
+        app.logger.info(f'Operación resta exitosa: {a} - {b} = {resultado}')
+        return jsonify({
+            "operacion": "resta",
+            "resultado": resultado,
+            "status": "exito"
+        })
+    except Exception as e:
+        app.logger.error(f'Error en resta: {str(e)}')
+        return jsonify({"error": "Error interno procesando la solicitud"}), 500
 
-    resultado = a - b
-    return jsonify({"resultado": resultado})
+@app.errorhandler(404)
+def page_not_found(e):
+    app.logger.warning(f'Intento de acceso a ruta no existente: {request.path}')
+    return jsonify({"error": "Endpoint no encontrado"}), 404
+
+@app.errorhandler(405)
+def method_not_allowed(e):
+    app.logger.warning(f'Método no permitido: {request.method} en {request.path}')
+    return jsonify({"error": "Método no permitido"}), 405
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    # Configuración para entorno de desarrollo
+    app.run(
+        host="0.0.0.0",
+        port=5000,
+        debug=False  # Siempre False en producción!
+    )
