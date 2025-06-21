@@ -1,103 +1,82 @@
 from flask import Flask, jsonify, request
 from functools import wraps
 import logging
-from logging.handlers import RotatingFileHandler  # This was missing
+from logging.handlers import RotatingFileHandler
 import os
 from flask_talisman import Talisman
 from flask_cors import CORS
 import sys
+from flask_wtf.csrf import CSRFProtect  # Importar CSRFProtect explícitamente
 
 app = Flask(__name__)
 
 # Configuración básica de seguridad
 app.config['JSON_SORT_KEYS'] = False  # Mejor para APIs
 
-# Configuración CSRF solo si es necesario para APIs (usar token en headers para formularios)
-app.config['WTF_CSRF_ENABLED'] = True  # Habilitar CSRF por defecto es más seguro
+# Configuración CSRF
+csrf = CSRFProtect(app)  # Inicializar CSRF protection
+app.config['WTF_CSRF_ENABLED'] = True
 app.config['WTF_CSRF_CHECK_DEFAULT'] = True
-app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # 1 hora de validez para tokens CSRF
+app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # 1 hora de validez
+app.config['WTF_CSRF_HEADERS'] = ['X-CSRFToken']  # Para APIs
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', os.urandom(32))  # Clave secreta fuerte
 
-# Seguridad
+# Configuración de entorno
 is_testing = os.environ.get('FLASK_ENV') == 'test' or 'pytest' in sys.modules
 is_development = os.environ.get('FLASK_ENV') == 'development'
 
 if is_testing:
-    # Configuración menos estricta para testing
-    app.config['WTF_CSRF_ENABLED'] = False  # Solo deshabilitar CSRF para testing
+    # Documentación explícita sobre por qué se deshabilita CSRF en testing
+    app.logger.info("CSRF deshabilitado para testing - solo usar en entorno controlado")
+    app.config['WTF_CSRF_ENABLED'] = False
     Talisman(app, force_https=False, strict_transport_security=False)
 else:
-    # Configuración de producción/desarrollo
+    # Configuración segura para producción/desarrollo
+    allowed_origins = os.environ.get('ALLOWED_ORIGINS', '').split(',')
+    
+    # Validación de origenes permitidos
+    if not all(o.startswith(('http://localhost', 'https://')) and not is_development:
+        raise ValueError("Orígenes permitidos deben usar HTTPS excepto en desarrollo")
+    
     CORS(app, resources={
         r"/*": {
-            "origins": os.environ.get('ALLOWED_ORIGINS', '').split(','),
-            "supports_credentials": True
+            "origins": allowed_origins,
+            "supports_credentials": True,
+            "allow_headers": ["Content-Type", "X-CSRFToken"],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
         }
     })
     
-    # Configuración de Talisman con políticas de seguridad robustas
-    talisman_config = {
-        'force_https': True,
-        'force_https_permanent': True,
-        'strict_transport_security': True,
-        'strict_transport_security_max_age': 31536000,  # 1 año
-        'strict_transport_security_include_subdomains': True,
-        'strict_transport_security_preload': True,
-        'content_security_policy': {
-            'default-src': "'self'",
-            'script-src': "'self' 'unsafe-inline'",  # Considerar eliminar unsafe-inline
-            'style-src': "'self' 'unsafe-inline'",
-            'img-src': "'self' data:",
-            'connect-src': "'self'",
-            'frame-ancestors': "'none'",
-            'form-action': "'self'"
-        }
+    # Configuración de seguridad reforzada
+    csp = {
+        'default-src': "'self'",
+        'script-src': ["'self'", "'unsafe-inline'"],
+        'style-src': ["'self'", "'unsafe-inline'"],
+        'img-src': ["'self'", "data:"],
+        'connect-src': ["'self'"] + allowed_origins,
+        'frame-ancestors': "'none'",
+        'form-action': "'self'"
     }
     
-    Talisman(app, **talisman_config)# Configuración básica de seguridad
-app.config['JSON_SORT_KEYS'] = False  # Mejor para APIs
+    Talisman(
+        app,
+        force_https=not is_development,
+        force_https_permanent=True,
+        strict_transport_security=not is_development,
+        strict_transport_security_max_age=31536000,
+        strict_transport_security_include_subdomains=True,
+        strict_transport_security_preload=True,
+        content_security_policy=csp,
+        session_cookie_secure=not is_development,
+        session_cookie_http_only=True
+    )
 
-# Configuración CSRF solo si es necesario para APIs (usar token en headers para formularios)
-app.config['WTF_CSRF_ENABLED'] = True  # Habilitar CSRF por defecto es más seguro
-app.config['WTF_CSRF_CHECK_DEFAULT'] = True
-app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # 1 hora de validez para tokens CSRF
-
-# Seguridad
-is_testing = os.environ.get('FLASK_ENV') == 'test' or 'pytest' in sys.modules
-is_development = os.environ.get('FLASK_ENV') == 'development'
-
-if is_testing:
-    # Configuración menos estricta para testing
-    app.config['WTF_CSRF_ENABLED'] = False  # Solo deshabilitar CSRF para testing
-    Talisman(app, force_https=False, strict_transport_security=False)
-else:
-    # Configuración de producción/desarrollo
-    CORS(app, resources={
-        r"/*": {
-            "origins": os.environ.get('ALLOWED_ORIGINS', '').split(','),
-            "supports_credentials": True
-        }
-    })
-    
-    # Configuración de Talisman con políticas de seguridad robustas
-    talisman_config = {
-        'force_https': True,
-        'force_https_permanent': True,
-        'strict_transport_security': True,
-        'strict_transport_security_max_age': 31536000,  # 1 año
-        'strict_transport_security_include_subdomains': True,
-        'strict_transport_security_preload': True,
-        'content_security_policy': {
-            'default-src': "'self'",
-            'script-src': "'self' 'unsafe-inline'",  # Considerar eliminar unsafe-inline
-            'style-src': "'self' 'unsafe-inline'",
-            'img-src': "'self' data:",
-            'connect-src': "'self'",
-            'frame-ancestors': "'none'",
-            'form-action': "'self'"
-        }
-    }
-    
-    Talisman(app, **talisman_config)
+# Documentación de seguridad para APIs
+if not is_testing:
+    @app.before_request
+    def csrf_protect():
+        if request.method in ('POST', 'PUT', 'DELETE', 'PATCH'):
+            csrf.protect()
 
 # Configuración de logging
 handler = RotatingFileHandler('app.log', maxBytes=10000, backupCount=3)
