@@ -6,66 +6,89 @@ import os
 from flask_talisman import Talisman
 from flask_cors import CORS
 import sys
+import secrets
 
 app = Flask(__name__)
 
 # Configuración básica de seguridad
 app.config['JSON_SORT_KEYS'] = False  # Mejor para APIs
-
-# Configuración CSRF deshabilitada (para API stateless)
-app.config['WTF_CSRF_ENABLED'] = False
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 
 # Configuración de entorno
 is_testing = os.environ.get('FLASK_ENV') == 'test' or 'pytest' in sys.modules
 is_development = os.environ.get('FLASK_ENV') == 'development'
+is_production = not (is_testing or is_development)
 
+# Configuración de logging seguro
+handler = RotatingFileHandler('app.log', maxBytes=10000, backupCount=3)
+handler.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+app.logger.addHandler(handler)
+
+# Deshabilitar el modo debug en producción
+if is_production:
+    app.debug = False
+    app.config['PROPAGATE_EXCEPTIONS'] = True
+
+# Configuración de seguridad por entorno
 if is_testing:
-    # Configuración menos estricta para testing
-    app.logger.info("Modo testing - seguridad reducida")
-    Talisman(app, force_https=False, strict_transport_security=False)
+    # Configuración para testing (con logging explícito)
+    app.logger.warning("Modo testing - configuracion de seguridad reducida")
+    Talisman(app, 
+             force_https=False, 
+             strict_transport_security=False,
+             content_security_policy=None)
 else:
-    # Configuración de producción/desarrollo
+    # Configuración CORS segura
     allowed_origins = [o.strip() for o in os.environ.get('ALLOWED_ORIGINS', '').split(',') if o.strip()]
     
-    # Validación de origenes permitidos
-    if not all(o.startswith(('http://localhost', 'https://')) for o in allowed_origins) and not is_development:
-        raise ValueError("Orígenes permitidos deben usar HTTPS excepto en desarrollo")
+    # Validación estricta de origenes permitidos
+    if is_production:
+        if not all(o.startswith('https://') for o in allowed_origins):
+            raise ValueError("En producción, todos los origenes deben usar HTTPS")
     
     CORS(app, resources={
         r"/*": {
             "origins": allowed_origins,
-            "supports_credentials": False,  # No se necesitan cookies
+            "supports_credentials": False,
             "allow_headers": ["Content-Type", "Authorization"],
-            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "expose_headers": [],
+            "max_age": 86400
         }
     })
     
-    # Configuración de seguridad reforzada sin CSRF
+    # Política de seguridad de contenido (CSP) estricta
     csp = {
         'default-src': "'self'",
         'script-src': ["'self'"],
-        'style-src': ["'self'"],
+        'style-src': ["'self'", "'unsafe-inline'"],  # Idealmente eliminar unsafe-inline
         'img-src': ["'self'", "data:"],
         'connect-src': ["'self'"] + allowed_origins,
         'frame-ancestors': "'none'",
-        'form-action': "'self'"
+        'form-action': "'self'",
+        'base-uri': "'self'",
+        'object-src': "'none'"
     }
     
+    # Configuración Talisman reforzada
     Talisman(
         app,
-        force_https=not is_development,
-        force_https_permanent=True,
-        strict_transport_security=not is_development,
+        force_https=is_production,
+        force_https_permanent=is_production,
+        strict_transport_security=is_production,
         strict_transport_security_max_age=31536000,
         strict_transport_security_include_subdomains=True,
+        strict_transport_security_preload=is_production,
         content_security_policy=csp,
-        session_cookie_secure=not is_development
+        content_security_policy_nonce_in=['script-src'],
+        referrer_policy='strict-origin-when-cross-origin',
+        session_cookie_secure=is_production,
+        session_cookie_http_only=True,
+        session_cookie_samesite='Lax'
     )
 
-# Configuración de logging
-handler = RotatingFileHandler('app.log', maxBytes=10000, backupCount=3)
-handler.setLevel(logging.INFO)
-app.logger.addHandler(handler)
 
 def validate_json_content(f):
     """Decorador para validar contenido JSON"""
