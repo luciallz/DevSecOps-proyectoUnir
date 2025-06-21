@@ -2,7 +2,7 @@ FROM jenkins/jenkins:lts
 
 USER root
 
-# Todas las operaciones en un solo RUN para minimizar capas
+# Single RUN instruction with all operations and security improvements
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         apt-transport-https \
@@ -10,16 +10,19 @@ RUN apt-get update && \
         curl \
         gnupg2 \
         software-properties-common && \
-    # Verificar fingerprint de la clave GPG de Docker (mejor práctica de seguridad)
-    mkdir -p /usr/share/keyrings && \
-    curl --fail --show-error --silent --location https://download.docker.com/linux/debian/gpg | \
-    gpg --batch --no-default-keyring --keyring /usr/share/keyrings/docker-archive-keyring.gpg --dearmor && \
-    # Verificar que el fingerprint coincida con el oficial (añade seguridad)
-    gpg --no-default-keyring --keyring /usr/share/keyrings/docker-archive-keyring.gpg --fingerprint | \
-    grep -q "9DC8 5822 9FC7 DD38 854A  E2D8 8D81 803C 0EBF CD88" && \
-    # Configurar repositorio de Docker con HTTPS
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list && \
-    # Instalar el resto de paquetes
+    mkdir -m 0755 -p /usr/share/keyrings && \
+    curl --proto '=https' --tlsv1.2 --fail --show-error --silent --location \
+        https://download.docker.com/linux/debian/gpg | \
+    gpg --batch --no-default-keyring \
+        --keyring /usr/share/keyrings/docker-archive-keyring.gpg \
+        --dearmor > /usr/share/keyrings/docker-archive-keyring.gpg && \
+    gpg --no-default-keyring \
+        --keyring /usr/share/keyrings/docker-archive-keyring.gpg \
+        --fingerprint | \
+    grep -q "9DC8 5822 9FC7 DD38 854A  E2D8 8D81 803C 0EBF CD88" || { echo "Fingerprint verification failed"; exit 1; } && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] \
+        https://download.docker.com/linux/debian \
+        $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
         docker-ce-cli \
@@ -27,13 +30,20 @@ RUN apt-get update && \
         python3-pip \
         python3-venv \
         zaproxy && \
-    # Limpieza final
+    apt-get autoremove -y && \
     apt-get clean && \
-    rm -rf /var/lib/apt/lists/* && \
-    # Configurar grupo docker
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
     groupadd -g 136 docker && \
     usermod -aG docker jenkins && \
-    # Asegurar permisos en el keyring
-    chmod 644 /usr/share/keyrings/docker-archive-keyring.gpg
+    chmod 644 /usr/share/keyrings/docker-archive-keyring.gpg && \
+    gpgconf --kill all && \
+    mkdir -p /usr/share/jenkins/ref/ && \
+    chown -R jenkins:jenkins /usr/share/jenkins/ref/ && \
+    chmod 750 /usr/share/jenkins/ref/
 
 USER jenkins
+
+# Environment variables can be separate as they don't create layers
+ENV PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PYTHONUNBUFFERED=1
