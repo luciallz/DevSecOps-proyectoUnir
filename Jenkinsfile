@@ -65,13 +65,7 @@ pipeline {
             steps {
                 withSonarQubeEnv('SonarQube') { 
                     sh """
-                        set -e
-                        ${scannerHome}/bin/sonar-scanner \
-                        -Dsonar.projectKey=${PROJECT_KEY} \
-                        -Dsonar.sources=src \
-                        -Dsonar.tests=tests \
-                        -Dsonar.python.coverage.reportPaths=coverage.xml \
-                        -Dsonar.exclusions=**/templates/**,**/static/**,**/node_modules/**,**/*.min.js,**/__pycache__/**
+                        ${scannerHome}/bin/sonar-scanner
                     """
                 }
             }
