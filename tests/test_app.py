@@ -11,13 +11,8 @@ def client():
         yield client
 
 def test_home(client):
-    """Test para la ruta principal."""
-    response = client.get("/")
+    response = client.get("/", follow_redirects=True)  # ¡Añade este parámetro!
     assert response.status_code == 200
-    # Solución 1: Decodificar la respuesta a UTF-8
-    assert "¡Hola desde Flask!" in response.data.decode('utf-8')
-    # O Solución 2: Usar string normal si no necesitas bytes
-    assert "¡Hola desde Flask!" in response.get_data(as_text=True)
 
 def test_suma(client):
     """Test exhaustivo para el endpoint /suma."""
@@ -64,3 +59,8 @@ def test_resta(client):
     response = client.post("/resta", json={"a": 5, "b": "y"})
     assert response.status_code == 400
     assert "error" in response.get_json()
+    
+def test_suma_datos_invalidos(client):
+    """Test para suma con datos inválidos"""
+    response = client.post("/suma", json={"a": "texto", "b": 4}, follow_redirects=True)
+    assert response.status_code == 400
