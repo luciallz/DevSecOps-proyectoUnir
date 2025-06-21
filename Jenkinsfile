@@ -1,6 +1,8 @@
 pipeline {
     agent any
-
+    tools {
+        dependencyCheck 'OWASP Dependency-Check'
+    }
     environment {
         SONAR_SCANNER_HOME = tool 'SonarQubeScanner'
         PYTHON_VERSION = '3.11'
@@ -32,13 +34,12 @@ pipeline {
                 sh '''
                 . venv/bin/activate
                 mkdir -p test-reports
-                PYTHONPATH=src pytest tests/ \
+                PYTHONPATH=. pytest tests/ \
                     --junitxml=test-reports/results.xml \
-                    --cov=src \
+                    --cov=. \
                     --cov-report=xml:coverage.xml \
                     -v
                 '''
-                archiveArtifacts artifacts: 'test-reports/results.xml,coverage.xml'
             }
         }
 
@@ -99,13 +100,11 @@ pipeline {
             steps {
                 script {
                     try {
-                        // Iniciar la aplicación
-                        sh '. venv/bin/activate && python src/app.py &'
+                        sh '. venv/bin/activate && python app.py &'
                         echo "Waiting for app to start..."
                         sleep 30
                         
-                        // Ejecutar ZAP Baseline Scan
-                        sh 'zap-baseline.py -t http://localhost:5000 -r zap-report.html -J zap-report.json'
+                        sh 'zap-baseline.py -t http://localhost:5000 -r zap-report.html -J zap-report.json -c zap-config.yaml'
                         
                         // Publicar reportes
                         archiveArtifacts artifacts: 'zap-report.html,zap-report.json'
@@ -113,13 +112,11 @@ pipeline {
                         echo "ZAP scan failed: ${e}"
                         currentBuild.result = 'UNSTABLE'
                     } finally {
-                        // Detener la aplicación
-                        sh 'pkill -f "python src/app.py" || echo "App not running"'
+                        sh 'pkill -f "python app.py" || echo "App not running"'
                     }
                 }
             }
         }
-    }
 
     post {
         always {

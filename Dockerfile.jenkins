@@ -14,4 +14,6 @@ RUN apt-get update && \
 # Crear grupo docker con GID 136 para que coincida con el host
 RUN groupadd -g 136 docker && usermod -aG docker jenkins
 
+RUN apt-get update && apt-get install -y zaproxy
+
 USER jenkins
