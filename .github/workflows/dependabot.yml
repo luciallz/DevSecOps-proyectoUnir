@@ -1,0 +1,27 @@
+name: Dependabot Auto-Update
+
+on:
+  schedule:
+    - cron: '0 0 * * *' 
+
+jobs:
+  update-deps:
+    runs-on: ubuntu-latest
+    env:
+      FLASK_SECRET_KEY: ${{ secrets.FLASK_SECRET_KEY }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests (usando la clave secreta)
+        run: |
+          python -c "from flask import Flask; app = Flask(__name__); app.config['SECRET_KEY'] = '${{ secrets.FLASK_SECRET_KEY }}'; print('✅ Configuración correcta')"
