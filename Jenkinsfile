@@ -1,7 +1,7 @@
 pipeline {
     agent any
     tools {
-        dependencyCheck 'OWASP Dependency-Check'
+        'dependency-check' 'OWASP-Dependency-Check'
     }
     environment {
         SONAR_SCANNER_HOME = tool 'SonarQubeScanner'
