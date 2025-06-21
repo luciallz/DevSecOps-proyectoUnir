@@ -45,8 +45,7 @@ pipeline {
         stage('Run Tests with Coverage') {
             steps {
                 sh '''
-                    . venv/bin/activate
-                    pytest --cov=src --cov-report=xml
+                    bash -c "source venv/bin/activate && pytest --cov=src --cov-report=xml"
                 '''
             }
         }
