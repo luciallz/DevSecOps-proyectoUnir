@@ -35,7 +35,7 @@ else:
     allowed_origins = os.environ.get('ALLOWED_ORIGINS', '').split(',')
     
     # Validación de origenes permitidos
-    if not all(o.startswith(('http://localhost', 'https://')) and not is_development:
+    if not all(o.startswith(('http://localhost', 'https://')) for o in allowed_origins) and not is_development:
         raise ValueError("Orígenes permitidos deben usar HTTPS excepto en desarrollo")
     
     CORS(app, resources={
