@@ -45,7 +45,7 @@ pipeline {
         stage('Run Tests with Coverage') {
             steps {
                 sh '''
-                    bash -c "source venv/bin/activate && PYTHONPATH=. pytest --cov=src --cov-report=xml"
+                    bash -c "source venv/bin/activate && PYTHONPATH=src pytest --cov=src --cov-report=xml"
                 '''
             }
         }
@@ -155,7 +155,11 @@ pipeline {
     post {
         always {
             echo 'Pipeline terminada. Puedes revisar los reportes generados.'
+            // Archiva todos los archivos (incluyendo coverage.xml)
             archiveArtifacts artifacts: '**/*', allowEmptyArchive: true
+
+            // Publica el reporte de cobertura (asegúrate de tener instalado el plugin cobertura)
+            cobertura coberturaReportFile: 'coverage.xml', failNoReports: false
         }
     }
 }
