@@ -3,6 +3,6 @@ pythonpath = .
 testpaths = tests
 python_files = test_*.py
 python_functions = test_*
-addopts = --cov=src --cov-report=xml:coverage.xml --junitxml=test-reports/results.xml -v
+# addopts = --cov=src --cov-report=xml:coverage.xml --junitxml=test-reports/results.xml -v
 filterwarnings =
     ignore::DeprecationWarning

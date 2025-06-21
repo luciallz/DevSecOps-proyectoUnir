@@ -18,11 +18,21 @@ pipeline {
             }
         }
 
-        stage('Setup Python Environment') {
+        stage('Setup Python') {
             steps {
-                sh "python${PYTHON_VERSION} -m venv venv"
-                sh '. venv/bin/activate && pip install --upgrade pip'
-                sh '. venv/bin/activate && pip install -r requirements.txt pytest pytest-cov || echo "Algunas dependencias opcionales fallaron"'
+                sh '''
+                # Limpieza previa y creación de entorno
+                rm -rf venv
+                python3 -m venv venv
+                . venv/bin/activate
+                
+                # Instalación con versión específica de pip
+                python -m pip install --upgrade pip
+                pip install -r requirements.txt
+                
+                # Verificación de instalación
+                pip list | grep -E "flask|pytest|cov"
+                '''
             }
         }
 
@@ -30,17 +40,24 @@ pipeline {
             steps {
                 sh '''
                 . venv/bin/activate
+                
+                # Crear directorio para reportes
                 mkdir -p test-reports
-                export PYTHONPATH=$PWD
-                pytest tests/ \
+                
+                # Ejecutar pruebas con configuración robusta
+                PYTHONPATH=${WORKSPACE} pytest \
+                    tests/ \
                     --junitxml=test-reports/results.xml \
                     --cov=. \
                     --cov-report=xml:coverage.xml \
+                    --cov-fail-under=80 \
                     -v
+                
+                # Verificar que se generaron los archivos
+                ls -la coverage.xml test-reports/results.xml
                 '''
             }
         }
-
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube') {
