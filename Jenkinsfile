@@ -60,6 +60,7 @@ pipeline {
                         -Dsonar.python.version=${PYTHON_VERSION} \
                         -Dsonar.sources=. \
                         -Dsonar.tests=tests \
+                        -Dsonar.exclusions=venv/**,**/site-packages/** \
                         -Dsonar.python.coverage.reportPaths=coverage.xml \
                         -Dsonar.python.xunit.reportPath=test-reports/results.xml
                     """
