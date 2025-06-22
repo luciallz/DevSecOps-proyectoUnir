@@ -86,29 +86,21 @@ pipeline {
         stage('Dependency-Check Analysis') {
             steps {
                 script {
-                    try {
-                        sh 'mkdir -p dependency-check-reports'
-
-                        docker.image('owasp/dependency-check').inside {
-                            sh '''
-                            /usr/share/dependency-check/bin/dependency-check.sh \
-                                --scan . \
-                                --project "DevSecOps-proyectoUnir" \
-                                --out dependency-check-reports \
-                                --format HTML \
-                                --format XML \
-                                --disablePyDist \
-                                --disablePyPkg
-                            '''
-                        }
-
-                        dependencyCheck pattern: 'dependency-check-reports/dependency-check-report.xml'
-                        archiveArtifacts artifacts: 'dependency-check-reports/*.html,dependency-check-reports/*.xml'
-
-                    } catch (Exception e) {
-                        echo "Error en Dependency-Check: ${e.toString()}"
-                        currentBuild.result = 'UNSTABLE'
-                    }
+                    // Creamos el directorio de salida antes de correr el contenedor
+                    sh 'mkdir -p dependency-check-reports'
+                }
+                // Ejecutamos Dependency-Check dentro del contenedor
+                withDockerContainer(image: 'owasp/dependency-check', args: '--entrypoint=""') {
+                    sh '''
+                        /usr/share/dependency-check/bin/dependency-check.sh \
+                            --scan . \
+                            --project DevSecOps-proyectoUnir \
+                            --out dependency-check-reports \
+                            --format HTML \
+                            --format XML \
+                            --disablePyDist \
+                            --disablePyPkg
+                    '''
                 }
             }
         }
