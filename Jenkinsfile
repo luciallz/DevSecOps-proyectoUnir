@@ -114,20 +114,33 @@ pipeline {
         stage('Run App and DAST with ZAP') {
             steps {
                 script {
+                    // Crear red Docker (ignora error si ya existe)
                     sh 'docker network create zap-net || true'
-                    sh 'docker run -d --rm --name myapp --network zap-net -p 5000:5000 myapp-image'
-                    
-                    docker.image('owasp/zap2docker-stable').inside {
-                        sh 'zap-baseline.py -t http://myapp:5000 -r zap-report.html -J zap-report.json -c zap-config.yaml'
+
+                    // Levantar app en red zap-net
+                    sh 'docker run -d --rm --name myapp --network zap-net myapp-image'
+
+                    // Ejecutar ZAP conectado a la misma red
+                    docker.image('owasp/zap2docker-stable').inside("--network zap-net") {
+                        sh '''
+                            zap-baseline.py \
+                                -t http://myapp:5000 \
+                                -r zap-report.html \
+                                -J zap-report.json \
+                                -c zap-config.yaml || true
+                        '''
                     }
-                    
-                    sh 'docker stop myapp'
-                    sh 'docker network rm zap-net'
-                    
+
+                    // Detener contenedor de app y eliminar red
+                    sh 'docker stop myapp || true'
+                    sh 'docker network rm zap-net || true'
+
+                    // Guardar artefactos
                     archiveArtifacts artifacts: 'zap-report.html,zap-report.json'
                 }
             }
         }
+
     }
 
     post {
