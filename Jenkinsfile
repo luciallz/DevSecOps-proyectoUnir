@@ -22,13 +22,10 @@ pipeline {
         stage('Setup Python') {
             steps {
                 sh '''
-                # Limpieza previa y creación de entorno
                 rm -rf venv
                 python3 -m venv venv
                 . venv/bin/activate
-                
-                # Instalación con versión específica de pip
-                python -m pip install --upgrade pip
+                pip install --upgrade pip
                 pip install -r requirements.txt
                 
                 # Verificación de instalación
@@ -44,8 +41,9 @@ pipeline {
                         . venv/bin/activate
                         PYTHONPATH=. pytest tests/ \
                             --junitxml=test-reports/results.xml \
-                            --cov=. \
+                            --cov=src \
                             --cov-report=xml:coverage.xml \
+                            --cov-report=term-missing \
                             --cov-fail-under=80 -v
                     '''
                 }
