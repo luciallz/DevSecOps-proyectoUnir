@@ -46,3 +46,16 @@
 2025-06-22 12:50:13,192 - app - WARNING - Valores no numéricos recibidos
 2025-06-22 12:50:13,194 - app - WARNING - Intento de acceso a ruta no existente: /ruta-inexistente
 2025-06-22 12:50:13,196 - app - WARNING - Método no permitido: GET en /suma
+2025-06-22 13:09:42,859 - DevSecOps-proyectoUnir.src.app - WARNING - Método no permitido: GET en /suma
+2025-06-22 13:09:48,988 - DevSecOps-proyectoUnir.src.app - WARNING - Método no permitido: GET en /suma/
+2025-06-22 13:12:26,862 - DevSecOps-proyectoUnir.src.app - WARNING - Método no permitido: GET en /suma
+2025-06-22 13:16:27,329 - app - WARNING - Parámetros faltantes
+2025-06-22 13:16:27,332 - app - WARNING - Intento de acceso sin JSON
+2025-06-22 13:16:27,334 - app - WARNING - Valores no numéricos recibidos
+2025-06-22 13:16:27,336 - app - WARNING - Intento de acceso a ruta no existente: /ruta-inexistente
+2025-06-22 13:16:27,338 - app - WARNING - Método no permitido: GET en /suma
+2025-06-22 13:16:50,770 - app - WARNING - Parámetros faltantes
+2025-06-22 13:16:50,772 - app - WARNING - Intento de acceso sin JSON
+2025-06-22 13:16:50,774 - app - WARNING - Valores no numéricos recibidos
+2025-06-22 13:16:50,776 - app - WARNING - Intento de acceso a ruta no existente: /ruta-inexistente
+2025-06-22 13:16:50,785 - app - WARNING - Método no permitido: GET en /suma
