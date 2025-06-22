@@ -38,7 +38,7 @@ pipeline {
             steps {
                 withEnv(['FLASK_ENV=testing']) {
                     sh '''
-                        source venv/bin/activate
+                        . venv/bin/activate
                         export PYTHONPATH=$PYTHONPATH:$(pwd)
                         python -m pytest tests/ \
                             --junitxml=test-reports/results.xml \
@@ -50,6 +50,7 @@ pipeline {
                 }
             }
         }
+
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube') {
