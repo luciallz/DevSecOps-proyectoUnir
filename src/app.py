@@ -19,6 +19,7 @@ except ImportError:
     DATA_SRC = "data:"
 
 app = Flask(__name__)
+app.url_map.strict_slashes = False
 
 # Configuración básica de seguridad
 app.config['JSON_SORT_KEYS'] = False  # Mejor para APIs
