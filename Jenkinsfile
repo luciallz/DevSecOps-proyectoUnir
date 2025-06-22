@@ -87,23 +87,22 @@ pipeline {
             steps {
                 script {
                     try {
-                        // Ejecutar análisis con la herramienta configurada globalmente
-                        sh '''
-                        mkdir -p dependency-check-reports
-                        dependency-check \
-                            --scan . \
-                            --project "DevSecOps-proyectoUnir" \
-                            --out dependency-check-reports \
-                            --format HTML \
-                            --format XML \
-                            --disablePyDist \
-                            --disablePyPkg
-                        '''
-                        
+                        sh 'mkdir -p dependency-check-reports'
+                        docker.image('owasp/dependency-check').inside {
+                            sh '''
+                                dependency-check.sh \
+                                    --scan /src \
+                                    --project "DevSecOps-proyectoUnir" \
+                                    --out /src/dependency-check-reports \
+                                    --format HTML \
+                                    --format XML \
+                                    --disablePyDist \
+                                    --disablePyPkg
+                            '''
+                        }
                         // Publicar resultados en Jenkins
                         dependencyCheck pattern: 'dependency-check-reports/dependency-check-report.xml'
                         archiveArtifacts artifacts: 'dependency-check-reports/*.html,dependency-check-reports/*.xml'
-                        
                     } catch (Exception e) {
                         echo "Error en Dependency-Check: ${e.toString()}"
                         currentBuild.result = 'UNSTABLE'
@@ -111,6 +110,13 @@ pipeline {
                 }
             }
         }
+
+        stage('Build App Docker Image') {
+            steps {
+                sh 'docker build -t myapp-image .'
+            }
+        }
+
         stage('Run App and DAST with ZAP') {
             steps {
                 script {
