@@ -24,7 +24,7 @@ def test_suma_success(client):
     """Test para la operación suma con datos válidos"""
     data = {'a': 5, 'b': 3}
     response = client.post(
-        '/suma',
+        '/suma/',
         data=json.dumps(data),
         content_type='application/json'
     )
@@ -38,7 +38,7 @@ def test_resta_success(client):
     """Test para la operación resta con datos válidos"""
     data = {'a': 10, 'b': 4}
     response = client.post(
-        '/resta',
+        '/resta/',
         data=json.dumps(data),
         content_type='application/json'
     )
@@ -52,7 +52,7 @@ def test_suma_missing_parameters(client):
     """Test para suma con parámetros faltantes"""
     data = {'a': 5}  # Falta 'b'
     response = client.post(
-        '/suma',
+        '/suma/',
         data=json.dumps(data),
         content_type='application/json'
     )
@@ -64,7 +64,7 @@ def test_resta_invalid_content_type(client):
     """Test para resta con Content-Type incorrecto"""
     data = {'a': 5, 'b': 3}
     response = client.post(
-        '/resta',
+        '/resta/',
         data=json.dumps(data),
         content_type='text/plain'  # Incorrecto
     )
@@ -76,7 +76,7 @@ def test_suma_non_numeric(client):
     """Test para suma con valores no numéricos"""
     data = {'a': 'cinco', 'b': 'tres'}  # No son números
     response = client.post(
-        '/suma',
+        '/suma/',
         data=json.dumps(data),
         content_type='application/json'
     )
@@ -93,7 +93,7 @@ def test_404_not_found(client):
 
 def test_405_method_not_allowed(client):
     """Test para método no permitido"""
-    response = client.get('/suma')  # GET no está permitido, solo POST
+    response = client.get('/suma/')  # GET no está permitido, solo POST
     assert response.status_code == 405
     response_data = json.loads(response.get_data(as_text=True))
     assert 'error' in response_data
