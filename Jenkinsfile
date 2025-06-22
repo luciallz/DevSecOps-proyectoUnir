@@ -88,20 +88,23 @@ pipeline {
                 script {
                     try {
                         sh 'mkdir -p dependency-check-reports'
-                        docker.image('owasp/dependency-check').inside('--entrypoint=""') {
+
+                        docker.image('owasp/dependency-check').inside {
                             sh '''
-                                dependency-check \
-                                    --scan /src \
-                                    --project "DevSecOps-proyectoUnir" \
-                                    --out /src/dependency-check-reports \
-                                    --format HTML \
-                                    --format XML \
-                                    --disablePyDist \
-                                    --disablePyPkg
+                            /usr/share/dependency-check/bin/dependency-check.sh \
+                                --scan . \
+                                --project "DevSecOps-proyectoUnir" \
+                                --out dependency-check-reports \
+                                --format HTML \
+                                --format XML \
+                                --disablePyDist \
+                                --disablePyPkg
                             '''
                         }
+
                         dependencyCheck pattern: 'dependency-check-reports/dependency-check-report.xml'
                         archiveArtifacts artifacts: 'dependency-check-reports/*.html,dependency-check-reports/*.xml'
+
                     } catch (Exception e) {
                         echo "Error en Dependency-Check: ${e.toString()}"
                         currentBuild.result = 'UNSTABLE'
