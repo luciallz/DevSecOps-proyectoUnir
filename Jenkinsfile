@@ -114,20 +114,21 @@ pipeline {
         stage('Run App and DAST with ZAP') {
             steps {
                 script {
-                sh 'docker network create zap-net || true'
-                sh 'docker run -d --rm --name myapp --network zap-net -p 5000:5000 myapp-image'
-                
-                docker.image('owasp/zap2docker-stable').inside {
-                    sh 'zap-baseline.py -t http://myapp:5000 -r zap-report.html -J zap-report.json -c zap-config.yaml'
-                }
-                
-                sh 'docker stop myapp'
-                sh 'docker network rm zap-net'
-                
-                archiveArtifacts artifacts: 'zap-report.html,zap-report.json'
+                    sh 'docker network create zap-net || true'
+                    sh 'docker run -d --rm --name myapp --network zap-net -p 5000:5000 myapp-image'
+                    
+                    docker.image('owasp/zap2docker-stable').inside {
+                        sh 'zap-baseline.py -t http://myapp:5000 -r zap-report.html -J zap-report.json -c zap-config.yaml'
+                    }
+                    
+                    sh 'docker stop myapp'
+                    sh 'docker network rm zap-net'
+                    
+                    archiveArtifacts artifacts: 'zap-report.html,zap-report.json'
                 }
             }
         }
+    }
 
     post {
         always {
