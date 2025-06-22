@@ -20,6 +20,7 @@ except ImportError:
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
+print(f"Strict slashes: {app.url_map.strict_slashes}") 
 
 # Configuración básica de seguridad
 app.config['JSON_SORT_KEYS'] = False  # Mejor para APIs
