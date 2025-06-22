@@ -168,6 +168,7 @@ def home():
     return "¡Hola desde Flask!"
 
 @app.route('/suma', methods=['POST'], strict_slashes=False)
+@app.route('/suma/', methods=['POST'], strict_slashes=False)
 @validate_json_content
 @validate_numbers_input
 def suma(a, b):
@@ -190,6 +191,7 @@ def suma(a, b):
         return jsonify({"error": "Error interno procesando la solicitud"}), 500
 
 @app.route('/resta', methods=['POST'], strict_slashes=False)
+@app.route('/resta/', methods=['POST'], strict_slashes=False)
 @validate_json_content
 @validate_numbers_input
 def resta(a, b):
