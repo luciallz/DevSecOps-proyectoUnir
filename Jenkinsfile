@@ -111,28 +111,24 @@ pipeline {
                 }
             }
         }
-        stage('DAST with OWASP ZAP') {
+        stage('Run App and DAST with ZAP') {
             steps {
                 script {
-                    try {
-                        sh '. venv/bin/activate && python app.py &'
-                        echo "Waiting for app to start..."
-                        sleep 30
-                        
-                        sh 'zap-baseline.py -t http://localhost:5000 -r zap-report.html -J zap-report.json -c zap-config.yaml'
-                        
-                        // Publicar reportes
-                        archiveArtifacts artifacts: 'zap-report.html,zap-report.json'
-                    } catch (e) {
-                        echo "ZAP scan failed: ${e}"
-                        currentBuild.result = 'UNSTABLE'
-                    } finally {
-                        sh 'pkill -f "python app.py" || echo "App not running"'
-                    }
+                sh 'docker network create zap-net || true'
+                sh 'docker run -d --rm --name myapp --network zap-net -p 5000:5000 myapp-image'
+                
+                docker.image('owasp/zap2docker-stable').inside {
+                    sh 'zap-baseline.py -t http://myapp:5000 -r zap-report.html -J zap-report.json -c zap-config.yaml'
+                }
+                
+                sh 'docker stop myapp'
+                sh 'docker network rm zap-net'
+                
+                archiveArtifacts artifacts: 'zap-report.html,zap-report.json'
                 }
             }
         }
-    }
+
     post {
         always {
             echo 'Pipeline completed. Cleaning up...'
