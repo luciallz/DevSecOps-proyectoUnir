@@ -1,7 +1,12 @@
+# Dependencias básicas
+Flask==3.0.0
+Flask-Cors==4.0.0
+
+# Testing
 pytest==8.4.1
 pytest-cov==6.2.1
 coverage==7.9.1
-python-owasp-zap-v2.4==0.1.0
-flask-talisman==1.0.0
-flask-cors==6.0.1
-flask-wtf>=1.2.1
+
+# Dependencias opcionales (si las usas)
+# flask-wtf==1.2.1  # Solo si usas formularios
+# python-owasp-zap-v2.4==0.1.0  # Solo si haces pruebas de seguridad

@@ -39,7 +39,8 @@ pipeline {
                 withEnv(['FLASK_ENV=test']) {
                     sh '''
                         . venv/bin/activate
-                        PYTHONPATH=. pytest tests/ \
+                        export PYTHONPATH=$PYTHONPATH:$(pwd)
+                        python -m pytest tests/ \
                             --junitxml=test-reports/results.xml \
                             --cov=src \
                             --cov-report=xml:coverage.xml \

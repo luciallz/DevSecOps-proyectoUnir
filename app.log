@@ -59,3 +59,28 @@
 2025-06-22 13:16:50,774 - app - WARNING - Valores no numéricos recibidos
 2025-06-22 13:16:50,776 - app - WARNING - Intento de acceso a ruta no existente: /ruta-inexistente
 2025-06-22 13:16:50,785 - app - WARNING - Método no permitido: GET en /suma
+2025-06-22 14:08:13,819 - app - WARNING - Parámetros faltantes
+2025-06-22 14:08:13,822 - app - WARNING - Intento de acceso sin JSON
+2025-06-22 14:08:13,825 - app - WARNING - Valores no numéricos recibidos
+2025-06-22 14:08:13,827 - app - WARNING - Intento de acceso a ruta no existente: /ruta-inexistente
+2025-06-22 14:08:13,829 - app - WARNING - Método no permitido: GET en /suma/
+2025-06-22 14:17:27,183 - app - WARNING - Parámetros faltantes
+2025-06-22 14:17:27,185 - app - WARNING - Intento de acceso sin JSON
+2025-06-22 14:17:27,187 - app - WARNING - Valores no numéricos recibidos
+2025-06-22 14:17:27,191 - app - WARNING - Intento de acceso a ruta no existente: /ruta-inexistente
+2025-06-22 14:17:27,193 - app - WARNING - Método no permitido: GET en /suma/
+2025-06-22 14:18:18,999 - app - WARNING - Parámetros faltantes
+2025-06-22 14:18:19,007 - app - WARNING - Intento de acceso sin JSON
+2025-06-22 14:18:19,010 - app - WARNING - Valores no numéricos recibidos
+2025-06-22 14:18:19,011 - app - WARNING - Intento de acceso a ruta no existente: /ruta-inexistente
+2025-06-22 14:18:19,014 - app - WARNING - Método no permitido: GET en /suma/
+2025-06-22 14:20:15,101 - app - WARNING - Parámetros faltantes
+2025-06-22 14:20:15,103 - app - WARNING - Intento de acceso sin JSON
+2025-06-22 14:20:15,108 - app - WARNING - Valores no numéricos recibidos
+2025-06-22 14:20:15,111 - app - WARNING - Intento de acceso a ruta no existente: /ruta-inexistente
+2025-06-22 14:20:15,113 - app - WARNING - Método no permitido: GET en /suma/
+2025-06-22 14:21:05,971 - app - WARNING - Parámetros faltantes
+2025-06-22 14:21:05,974 - app - WARNING - Intento de acceso sin JSON
+2025-06-22 14:21:05,975 - app - WARNING - Valores no numéricos recibidos
+2025-06-22 14:21:05,977 - app - WARNING - Intento de acceso a ruta no existente: /ruta-inexistente
+2025-06-22 14:21:05,979 - app - WARNING - Método no permitido: GET en /suma/
