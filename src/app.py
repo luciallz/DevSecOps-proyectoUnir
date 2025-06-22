@@ -19,6 +19,7 @@ app.url_map.strict_slashes = False
 
 # Configuración básica
 app.config['JSON_SORT_KEYS'] = False
+# La SECRET_KEY no está hardcodeada, se obtiene de las variables de entorno en producción
 if is_production:
     secret_key = os.environ.get('SECRET_KEY')
     if not secret_key:
