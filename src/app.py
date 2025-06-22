@@ -25,8 +25,9 @@ app.config['JSON_SORT_KEYS'] = False  # Mejor para APIs
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 
 # Configuración de entorno
-is_testing = os.environ.get('FLASK_ENV') == 'test' or 'pytest' in sys.modules
-is_development = os.environ.get('FLASK_ENV') == 'development'
+flask_env = os.environ.get("FLASK_ENV", "development")
+is_testing = flask_env == "testing"
+is_development = flask_env == "development"
 is_production = not (is_testing or is_development)
 
 # Configuración de logging seguro
@@ -36,13 +37,11 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 handler.setFormatter(formatter)
 app.logger.addHandler(handler)
 
-# Deshabilitar el modo debug en producción
-if is_production:
-    app.debug = False
-    app.config['PROPAGATE_EXCEPTIONS'] = True
-
-# Definir allowed_origins antes de usarlo en CORS
 allowed_origins = [o.strip() for o in os.environ.get('ALLOWED_ORIGINS', '').split(',') if o.strip()]
+
+if is_production:
+    if not all(o.startswith('https://') for o in allowed_origins):
+        raise ValueError("En producción, todos los origenes deben usar HTTPS")
 
 # Configuración CORS segura
 CORS(app, resources={
