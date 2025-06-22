@@ -44,7 +44,7 @@ pipeline {
                         . venv/bin/activate
                         PYTHONPATH=. pytest tests/ \
                             --junitxml=test-reports/results.xml \
-                            --cov=src \
+                            --cov=. \
                             --cov-report=xml:coverage.xml \
                             --cov-fail-under=80 -v
                     '''
