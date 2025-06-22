@@ -90,7 +90,7 @@ pipeline {
                         sh 'mkdir -p dependency-check-reports'
                         docker.image('owasp/dependency-check').inside('--entrypoint=""') {
                             sh '''
-                                ./dependency-check.sh \
+                                /opt/dependency-check/bin/dependency-check.sh \
                                     --scan /src \
                                     --project "DevSecOps-proyectoUnir" \
                                     --out /src/dependency-check-reports \
