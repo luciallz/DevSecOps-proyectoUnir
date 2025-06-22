@@ -16,7 +16,11 @@ app.url_map.strict_slashes = False
 
 # Configuración básica
 app.config['JSON_SORT_KEYS'] = False
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
+if is_production:
+    secret_key = os.environ.get('SECRET_KEY')
+    if not secret_key:
+        raise RuntimeError("En producción SECRET_KEY debe estar definido en las variables de entorno")
+    app.config['SECRET_KEY'] = secret_key
 
 # Configuración de logging
 handler = RotatingFileHandler('app.log', maxBytes=10000, backupCount=3)
