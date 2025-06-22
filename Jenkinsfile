@@ -88,9 +88,9 @@ pipeline {
                 script {
                     try {
                         sh 'mkdir -p dependency-check-reports'
-                        docker.image('owasp/dependency-check').inside {
+                        docker.image('owasp/dependency-check').inside('--entrypoint=""') {
                             sh '''
-                                dependency-check.sh \
+                                ./dependency-check.sh \
                                     --scan /src \
                                     --project "DevSecOps-proyectoUnir" \
                                     --out /src/dependency-check-reports \
@@ -100,7 +100,6 @@ pipeline {
                                     --disablePyPkg
                             '''
                         }
-                        // Publicar resultados en Jenkins
                         dependencyCheck pattern: 'dependency-check-reports/dependency-check-report.xml'
                         archiveArtifacts artifacts: 'dependency-check-reports/*.html,dependency-check-reports/*.xml'
                     } catch (Exception e) {
