@@ -95,7 +95,14 @@ else:
         session_cookie_http_only=True,
         session_cookie_samesite='Lax'
     )
+@app.before_request
+def log_request_info():
+    app.logger.info(f"Request path: {request.path} Method: {request.method}")
 
+@app.after_request
+def log_response_info(response):
+    app.logger.info(f"Response status: {response.status_code} Location header: {response.headers.get('Location')}")
+    return response
 def setup_security(app, is_production, allowed_origins):
     """Configuración centralizada de seguridad con testing más fácil"""
 
