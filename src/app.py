@@ -10,7 +10,10 @@ SELF = "'self'"
 NONE = "'none'"
 UNSAFE_INLINE = "'unsafe-inline'"
 DATA_SRC = "data:"
-
+flask_env = os.environ.get("FLASK_ENV", "development")
+is_testing = flask_env == "testing"
+is_development = flask_env == "development"
+is_production = not (is_testing or is_development)
 app = Flask(__name__)
 app.url_map.strict_slashes = False
 
