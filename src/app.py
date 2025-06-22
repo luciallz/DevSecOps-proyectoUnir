@@ -59,10 +59,7 @@ CORS(app, resources={
 if is_testing:
     # Configuración para testing (con logging explícito)
     app.logger.warning("Modo testing - configuración de seguridad reducida")
-    Talisman(app, 
-             force_https=False, 
-             strict_transport_security=False,
-             content_security_policy=None)
+    Talisman(app, force_https=False)
 else:
     # Validación estricta de origenes permitidos
     if is_production:

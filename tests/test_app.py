@@ -16,7 +16,7 @@ def client():
 
 def test_home_page(client):
     """Test para la ruta principal"""
-    response = client.get('/')
+    response = client.get('/', follow_redirects=True)
     assert response.status_code == 200
     assert "¡Hola desde Flask!" in response.get_data(as_text=True)
 

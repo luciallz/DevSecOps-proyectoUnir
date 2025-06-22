@@ -6,3 +6,18 @@
 2025-06-22 12:25:32,808 - app - WARNING - Valores no numéricos recibidos
 2025-06-22 12:25:32,810 - app - WARNING - Intento de acceso a ruta no existente: /ruta-inexistente
 2025-06-22 12:25:32,812 - app - WARNING - Método no permitido: GET en /suma
+2025-06-22 12:33:26,838 - app - WARNING - Parámetros faltantes
+2025-06-22 12:33:26,841 - app - WARNING - Intento de acceso sin JSON
+2025-06-22 12:33:26,842 - app - WARNING - Valores no numéricos recibidos
+2025-06-22 12:33:26,844 - app - WARNING - Intento de acceso a ruta no existente: /ruta-inexistente
+2025-06-22 12:33:26,845 - app - WARNING - Método no permitido: GET en /suma
+2025-06-22 12:36:01,826 - app - WARNING - Parámetros faltantes
+2025-06-22 12:36:01,827 - app - WARNING - Intento de acceso sin JSON
+2025-06-22 12:36:01,828 - app - WARNING - Valores no numéricos recibidos
+2025-06-22 12:36:01,829 - app - WARNING - Intento de acceso a ruta no existente: /ruta-inexistente
+2025-06-22 12:36:01,831 - app - WARNING - Método no permitido: GET en /suma
+2025-06-22 12:36:52,733 - app - WARNING - Parámetros faltantes
+2025-06-22 12:36:52,736 - app - WARNING - Intento de acceso sin JSON
+2025-06-22 12:36:52,738 - app - WARNING - Valores no numéricos recibidos
+2025-06-22 12:36:52,740 - app - WARNING - Intento de acceso a ruta no existente: /ruta-inexistente
+2025-06-22 12:36:52,742 - app - WARNING - Método no permitido: GET en /suma
