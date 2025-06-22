@@ -36,9 +36,9 @@ pipeline {
 
         stage('Run Tests with Coverage') {
             steps {
-                withEnv(['FLASK_ENV=test']) {
+                withEnv(['FLASK_ENV=testing']) {
                     sh '''
-                        . venv/bin/activate
+                        source venv/bin/activate
                         export PYTHONPATH=$PYTHONPATH:$(pwd)
                         python -m pytest tests/ \
                             --junitxml=test-reports/results.xml \
