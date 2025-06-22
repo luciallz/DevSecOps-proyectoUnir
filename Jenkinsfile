@@ -67,16 +67,13 @@ pipeline {
             }
         }
 
-        stage('Quality Gate') {
-            steps {
-                timeout(time: 30, unit: 'MINUTES') {
-                    script {
-                        def qg = waitForQualityGate()
-                        if (qg.status != 'OK') {
-                            echo "Quality Gate status: ${qg.status}"
-                            // Continuar pero marcar como inestable
-                            currentBuild.result = 'UNSTABLE'
-                        }
+        stage("Quality Gate") {
+            timeout(time: 2, unit: 'MINUTES') {
+                script {
+                    sleep(10) // Espera 10 segundos
+                    def qg = waitForQualityGate()
+                    if (qg.status != 'OK') {
+                        error "Quality Gate failed: ${qg.status}"
                     }
                 }
             }
