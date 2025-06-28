@@ -83,17 +83,23 @@ pipeline {
 
         stage('Dependency-Check Analysis') {
             steps {
-                sh 'mkdir -p dependency-check-reports'
-                withDockerContainer(image: 'owasp/dependency-check', args: '--entrypoint=""') {
+                sh 'mkdir -p dependency-check-reports odc-data'
+                withDockerContainer(
+                    image: 'owasp/dependency-check',
+                    args: '--entrypoint="" -v $PWD/odc-data:/usr/share/dependency-check/data'
+                ) {
                     sh '''
-                    /usr/share/dependency-check/bin/dependency-check.sh \
-                        --scan . \
-                        --project DevSecOps-proyectoUnir \
-                        --out dependency-check-reports \
-                        --format HTML \
-                        --format XML \
-                        --disablePyDist \
-                        --disablePyPkg
+                        /usr/share/dependency-check/bin/dependency-check.sh \
+                            --project "DevSecOps-proyectoUnir" \
+                            --scan src \
+                            --out dependency-check-reports \
+                            --format HTML \
+                            --format XML \
+                            --disablePyDist \
+                            --disablePyPkg \
+                            --exclude venv \
+                            --exclude .git \
+                            --exclude tests
                     '''
                 }
             }
@@ -118,7 +124,7 @@ pipeline {
                     sh 'docker run -d --rm --name myapp --network zap-net myapp-image'
 
                     // Ejecutar ZAP
-                    docker.image('owasp/zap2docker-stable').inside('--network zap-net') {
+                    docker.image('ghcr.io/zaproxy/zaproxy:stable').inside("--network zap-net") {
                         sh '''
                         zap-baseline.py \
                             -t http://myapp:5000 \
