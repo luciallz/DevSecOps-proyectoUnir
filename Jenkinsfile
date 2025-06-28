@@ -12,6 +12,12 @@ pipeline {
                 deleteDir()
             }
         }
+        
+        stage('Checkout Code') {
+            steps {
+                checkout scm
+            }
+        }
 
         stage('Setup Python') {
             steps {
