@@ -12,7 +12,7 @@ pipeline {
                 deleteDir()
             }
         }
-        
+
         stage('Checkout Code') {
             steps {
                 checkout scm
@@ -27,8 +27,6 @@ pipeline {
                 . venv/bin/activate
                 pip install --upgrade pip
                 pip install -r requirements.txt
-                
-                # Verificación de instalación
                 pip list | grep -E "flask|pytest|cov"
                 '''
             }
@@ -38,14 +36,15 @@ pipeline {
             steps {
                 withEnv(['FLASK_ENV=testing']) {
                     sh '''
-                        . venv/bin/activate
-                        export PYTHONPATH=$PYTHONPATH:$(pwd)
-                        python -m pytest tests/ \
-                            --junitxml=test-reports/results.xml \
-                            --cov=src \
-                            --cov-report=xml:coverage.xml \
-                            --cov-report=term-missing \
-                            --cov-fail-under=80 -v
+                    . venv/bin/activate
+                    export PYTHONPATH=$PYTHONPATH:$(pwd)
+                    mkdir -p test-reports
+                    python -m pytest tests/ \
+                        --junitxml=test-reports/results.xml \
+                        --cov=src \
+                        --cov-report=xml:coverage.xml \
+                        --cov-report=term-missing \
+                        --cov-fail-under=80 -v
                     '''
                 }
             }
@@ -75,7 +74,6 @@ pipeline {
                         def qg = waitForQualityGate()
                         if (qg.status != 'OK') {
                             echo "Quality Gate status: ${qg.status}"
-                            // Continuar pero marcar como inestable
                             currentBuild.result = 'UNSTABLE'
                         }
                     }
@@ -85,21 +83,17 @@ pipeline {
 
         stage('Dependency-Check Analysis') {
             steps {
-                script {
-                    // Creamos el directorio de salida antes de correr el contenedor
-                    sh 'mkdir -p dependency-check-reports'
-                }
-                // Ejecutamos Dependency-Check dentro del contenedor
+                sh 'mkdir -p dependency-check-reports'
                 withDockerContainer(image: 'owasp/dependency-check', args: '--entrypoint=""') {
                     sh '''
-                        /usr/share/dependency-check/bin/dependency-check.sh \
-                            --scan . \
-                            --project DevSecOps-proyectoUnir \
-                            --out dependency-check-reports \
-                            --format HTML \
-                            --format XML \
-                            --disablePyDist \
-                            --disablePyPkg
+                    /usr/share/dependency-check/bin/dependency-check.sh \
+                        --scan . \
+                        --project DevSecOps-proyectoUnir \
+                        --out dependency-check-reports \
+                        --format HTML \
+                        --format XML \
+                        --disablePyDist \
+                        --disablePyPkg
                     '''
                 }
             }
@@ -114,31 +108,30 @@ pipeline {
         stage('Run App and DAST with ZAP') {
             steps {
                 script {
-                    // Crear red Docker (ignora error si ya existe)
+                    // Crear red si no existe
                     sh 'docker network create zap-net || true'
 
-                    // Detener y eliminar contenedor previo si existe
+                    // Detener y eliminar contenedor anterior si está
                     sh 'docker rm -f myapp || true'
 
-                    // Levantar app en red zap-net
+                    // Ejecutar app
                     sh 'docker run -d --rm --name myapp --network zap-net myapp-image'
 
-                    // Ejecutar ZAP conectado a la misma red
-                    docker.image('owasp/zap2docker-stable').inside("--network zap-net") {
+                    // Ejecutar ZAP
+                    docker.image('owasp/zap2docker-stable').inside('--network zap-net') {
                         sh '''
-                            zap-baseline.py \
-                                -t http://myapp:5000 \
-                                -r zap-report.html \
-                                -J zap-report.json \
-                                -c zap-config.yaml || true
+                        zap-baseline.py \
+                            -t http://myapp:5000 \
+                            -r zap-report.html \
+                            -J zap-report.json \
+                            -c zap-config.yaml || true
                         '''
                     }
 
-                    // Detener contenedor de app y eliminar red
+                    // Parar app y eliminar red
                     sh 'docker stop myapp || true'
                     sh 'docker network rm zap-net || true'
 
-                    // Guardar artefactos
                     archiveArtifacts artifacts: 'zap-report.html,zap-report.json'
                 }
             }
@@ -149,10 +142,7 @@ pipeline {
         always {
             echo 'Pipeline completed. Cleaning up...'
             sh 'pkill -f "python src/app.py" || echo "No app to kill"'
-            archiveArtifacts artifacts: '**/reports/*,**/dependency-check-reports/*,zap-report.*'
-            
-            // Limpiar workspace (opcional)
-            // deleteDir()
+            archiveArtifacts artifacts: '**/test-reports/*,**/dependency-check-reports/*,zap-report.*'
         }
         success {
             echo 'Pipeline succeeded!'
