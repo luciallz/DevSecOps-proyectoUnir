@@ -39,7 +39,7 @@ RUN apt-get update && \
     docker-ce-cli \
     python3 \
     python3-pip \
-    python3-venv
+    python3-venv && \
     \
     # Cleanup
     apt-get autoremove -y && \
