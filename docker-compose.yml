@@ -17,6 +17,7 @@ services:
       - /usr/bin/docker:/usr/bin/docker
     group_add:
       - 136
+    user: root
     networks:
       - devsecops
 
