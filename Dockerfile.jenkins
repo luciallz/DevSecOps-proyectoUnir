@@ -47,7 +47,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
     \
     # Docker group setup
-    groupadd docker || true && \
+    groupadd -g ${DOCKER_GID} docker || true && \
     usermod -aG docker jenkins && \
     \
     # Set keyring permissions
