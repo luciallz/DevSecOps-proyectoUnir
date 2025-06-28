@@ -5,12 +5,17 @@ USER root
 # Single RUN instruction with all operations and security improvements
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
+        git \
         apt-transport-https \
         ca-certificates \
         curl \
         gnupg2 \
-        software-properties-common && \
-    \
+        software-properties-common \
+        docker-ce-cli \
+        python3 \
+        python3-pip \
+        python3-venv \
+        zaproxy && \
     # Secure GPG key setup
     mkdir -m 0755 -p /usr/share/keyrings && \
     curl --proto '=https' --tlsv1.2 \
