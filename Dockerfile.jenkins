@@ -36,11 +36,10 @@ RUN apt-get update && \
     # Install packages
     apt-get update && \
     apt-get install -y --no-install-recommends \
-        docker-ce-cli \
-        python3 \
-        python3-pip \
-        python3-venv \
-        zaproxy && \
+    docker-ce-cli \
+    python3 \
+    python3-pip \
+    python3-venv
     \
     # Cleanup
     apt-get autoremove -y && \
