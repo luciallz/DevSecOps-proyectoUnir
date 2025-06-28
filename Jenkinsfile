@@ -13,18 +13,6 @@ pipeline {
             }
         }
 
-        stage('Checkout Code') {
-            steps {
-                checkout([$class: 'GitSCM',
-                    branches: [[name: '*/main']],
-                    userRemoteConfigs: [[
-                        url: 'https://github.com/luciallz/DevSecOps-proyectoUnir.git',
-                        credentialsId: 'github-token'
-                    ]]
-                ])
-            }
-        }
-
         stage('Setup Python') {
             steps {
                 sh '''
