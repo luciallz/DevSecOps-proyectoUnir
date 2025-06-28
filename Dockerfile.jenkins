@@ -36,26 +36,22 @@ RUN apt-get update && \
     # Install packages
     apt-get update && \
     apt-get install -y --no-install-recommends \
-    docker-ce-cli \
-    python3 \
-    python3-pip \
-    python3-venv && \
-    \
+        docker-ce-cli \
+        python3 \
+        python3-pip \
+        python3-venv && \
+        \
     # Cleanup
     apt-get autoremove -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
     \
     # Docker group setup
-    groupadd -g 136 docker && \
+    groupadd docker || true && \
     usermod -aG docker jenkins && \
     \
     # Set keyring permissions
-    chmod 644 /usr/share/keyrings/docker-archive-keyring.gpg && \
-    \
-    # Clean GPG credentials
-    gpgconf --kill all && \
-    \
+    chmod 666 /var/run/docker.sock || true && \
     # Jenkins directory setup
     mkdir -p /usr/share/jenkins/ref/ && \
     chown -R jenkins:jenkins /usr/share/jenkins/ref/ && \
