@@ -114,22 +114,40 @@ pipeline {
         stage('Run App and DAST with ZAP') {
             steps {
                 script {
-                    // Crear red Docker (ignora error si ya existe)
+                    // Crear red Docker (por si la app corre fuera)
                     sh 'docker network create zap-net || true'
 
-                    // Levantar app en red zap-net
+                    // Levantar app en red zap-net (si se quiere analizar una app en contenedor)
                     sh 'docker run -d --rm --name myapp --network zap-net myapp-image'
 
-                    // Ejecutar ZAP conectado a la misma red
-                    docker.image('owasp/zap2docker-stable').inside("--network zap-net") {
-                        sh '''
-                            zap-baseline.py \
-                                -t http://myapp:5000 \
-                                -r zap-report.html \
-                                -J zap-report.json \
-                                -c zap-config.yaml || true
-                        '''
-                    }
+                    // Ejecutar ZAP en background (ya instalado en Jenkins)
+                    sh '''
+                        zap -daemon -host 0.0.0.0 -port 8090 -config api.disablekey=true > /dev/null 2>&1 &
+                        sleep 15  # Esperar a que ZAP arranque
+                    '''
+
+                    // Lanza escaneo activo usando la API
+                    sh '''
+                        # Esperar hasta que ZAP esté listo
+                        for i in {1..10}; do
+                          curl -s http://localhost:8090/JSON/core/view/version/ && break
+                          echo "Esperando que ZAP inicie..."
+                          sleep 5
+                        done
+
+                        # Iniciar escaneo pasivo y activo
+                        curl "http://localhost:8090/JSON/core/action/scan/?url=http://myapp:5000"
+
+                        # Esperar a que termine el escaneo activo
+                        while [ "$(curl -s http://localhost:8090/JSON/core/view/status/ | jq -r .status)" != "0" ]; do
+                          echo "Escaneando..."
+                          sleep 10
+                        done
+
+                        # Generar reporte
+                        curl "http://localhost:8090/OTHER/core/other/htmlreport/" -o zap-report.html
+                        curl "http://localhost:8090/OTHER/core/other/jsonreport/" -o zap-report.json
+                    '''
 
                     // Detener contenedor de app y eliminar red
                     sh 'docker stop myapp || true'
@@ -140,7 +158,6 @@ pipeline {
                 }
             }
         }
-
     }
 
     post {
