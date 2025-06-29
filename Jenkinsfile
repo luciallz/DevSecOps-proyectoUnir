@@ -176,13 +176,11 @@ pipeline {
 
                     docker.image('ghcr.io/zaproxy/zaproxy:stable').inside("--network zap-net -v ${zapDir}:/zap/wrk") {
                         sh '''
-                        zap-baseline.py \
-                            -t http://myapp:5000 \
-                            -r /zap/wrk/zap-report.html \
-                            -J /zap/wrk/zap-report.json || true
+                        cd /zap/wrk
+                        zap-baseline.py -t http://myapp:5000 -r zap-report.html -J zap-report.json || true
+                        ls -l /zap/wrk
                         '''
                     }
-
                     archiveArtifacts artifacts: 'zap-output/zap-report.html,zap-output/zap-report.json', allowEmptyArchive: false
                 }
             }
