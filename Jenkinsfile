@@ -19,6 +19,16 @@ pipeline {
             }
         }
 
+        stage('Login to GHCR') {
+            steps {
+                withCredentials([string(credentialsId: 'GHCR_TOKEN', variable: 'TOKEN')]) {
+                    sh '''
+                        echo $TOKEN | docker login ghcr.io -u luciallz --password-stdin
+                    '''
+                }
+            }
+        }
+
         stage('Setup Python') {
             steps {
                 sh '''
@@ -122,6 +132,9 @@ pipeline {
 
                     // Ejecutar app
                     sh 'docker run -d --rm --name myapp --network zap-net myapp-image'
+
+                    // Esperar 10 segundos para que la app inicie
+                    sh 'sleep 10'
 
                     // Ejecutar ZAP
                     docker.image('ghcr.io/zaproxy/zaproxy:stable').inside("--network zap-net") {
