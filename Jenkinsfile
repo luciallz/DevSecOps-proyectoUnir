@@ -9,7 +9,11 @@ pipeline {
     stages {
         stage('Clean Workspace') {
             steps {
-                deleteDir()
+                sh '''
+                    echo "Limpiando workspace manualmente..."
+                    rm -rf ${WORKSPACE}/* || true
+                    rm -rf ${WORKSPACE}/.* 2>/dev/null || true
+                '''
             }
         }
 
