@@ -13,6 +13,17 @@ pipeline {
             }
         }
 
+        stage('Clean ZAP Folder') {
+            steps {
+                script {
+                    sh '''
+                        echo "Forzando borrado de zap/ si existe (por permisos de root previos)"
+                        sudo rm -rf $WORKSPACE/zap || true
+                    '''
+                }
+            }
+        }
+
         stage('Checkout Code') {
             steps {
                 checkout scm
