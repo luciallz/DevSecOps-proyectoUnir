@@ -138,22 +138,22 @@ pipeline {
         stage('Run App and DAST with ZAP') {
             steps {
                 script {
-                    // Ruta base del zap dentro del workspace
-                    def zapBasePath = "${env.WORKSPACE}/zap"
-                    
-                    // Ejecutar zap-baseline.py apuntando a la app y usando la config y reportes en la carpeta zap
+                    def zapPath = "${env.WORKSPACE}/zap"
+
                     sh """
-                        zap-baseline.py \
+                        docker run --rm \
+                        --network zap-net \
+                        -v ${zapPath}:/zap/wrk:rw \
+                        owasp/zap2docker-stable zap-baseline.py \
                         -t http://myapp:5000 \
-                        -r ${zapBasePath}/zap-report.html \
-                        -J ${zapBasePath}/zap-report.json \
-                        -c ${zapBasePath}/zap-config.yaml
+                        -r /zap/wrk/zap-report.html \
+                        -J /zap/wrk/zap-report.json \
+                        -c /zap/wrk/zap-config.yaml
                     """
                 }
             }
             post {
                 always {
-                    // Archivar reportes si existen
                     archiveArtifacts artifacts: 'zap/zap-report.html,zap/zap-report.json', allowEmptyArchive: true
                 }
             }
