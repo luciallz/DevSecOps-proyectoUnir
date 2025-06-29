@@ -8,21 +8,25 @@ pipeline {
 
     stages {
         stage('Clean Workspace') {
-            steps { deleteDir() }
+            steps {
+                deleteDir()
+            }
         }
 
         stage('Checkout Code') {
-            steps { checkout scm }
+            steps {
+                checkout scm
+            }
         }
 
         stage('Setup Python') {
             steps {
                 sh '''
-                    rm -rf venv
-                    python3 -m venv venv
-                    venv/bin/pip install --upgrade pip
-                    venv/bin/pip install -r requirements.txt
-                    venv/bin/pip list | grep -E "flask|pytest|cov"
+                rm -rf venv
+                python3 -m venv venv
+                venv/bin/pip install --upgrade pip
+                venv/bin/pip install -r requirements.txt
+                venv/bin/pip list | grep -E "flask|pytest|cov"
                 '''
             }
         }
@@ -31,14 +35,14 @@ pipeline {
             steps {
                 withEnv(['FLASK_ENV=testing']) {
                     sh '''
-                        export PYTHONPATH=$PYTHONPATH:$(pwd)
-                        mkdir -p test-reports
-                        venv/bin/python -m pytest tests/ \
-                            --junitxml=test-reports/results.xml \
-                            --cov=src \
-                            --cov-report=xml:coverage.xml \
-                            --cov-report=term-missing \
-                            --cov-fail-under=80 -v
+                    export PYTHONPATH=$PYTHONPATH:$(pwd)
+                    mkdir -p test-reports
+                    venv/bin/python -m pytest tests/ \
+                        --junitxml=test-reports/results.xml \
+                        --cov=src \
+                        --cov-report=xml:coverage.xml \
+                        --cov-report=term-missing \
+                        --cov-fail-under=80 -v
                     '''
                 }
             }
@@ -48,7 +52,7 @@ pipeline {
             steps {
                 withSonarQubeEnv('SonarQube') {
                     sh """
-                        ${SONAR_SCANNER_HOME}/bin/sonar-scanner \
+                    ${SONAR_SCANNER_HOME}/bin/sonar-scanner \
                         -Dsonar.projectKey=DevSecOps-proyectoUnir \
                         -Dsonar.python.version=${PYTHON_VERSION} \
                         -Dsonar.sources=. \
@@ -77,18 +81,21 @@ pipeline {
 
         stage('Init ODC DB') {
             steps {
-                script {
-                    def odcDataDir = "${env.WORKSPACE}/odc-data"
-                    sh """
-                        mkdir -p ${odcDataDir} && chown -R 1000:1000 ${odcDataDir}
-                        rm -f ${odcDataDir}/*.lock || true
-                    """
-                    withCredentials([string(credentialsId: 'nvd-api-key', variable: 'NVD_API_KEY')]) {
-                        withDockerContainer(image: 'owasp/dependency-check', args: "--entrypoint='' -v ${odcDataDir}:/usr/share/dependency-check/data -e NVD_API_KEY=${NVD_API_KEY}") {
-                            sh '''
-                                echo "Actualizando base de datos CVE (una sola vez)..."
-                                /usr/share/dependency-check/bin/dependency-check.sh --updateonly --data /usr/share/dependency-check/data --nvdApiKey $NVD_API_KEY || echo "Base ya en uso o actualizada"
-                            '''
+                timeout(time: 60, unit: 'MINUTES') {
+                    script {
+                        def odcDataDir = "${env.WORKSPACE}/odc-data"
+                        sh """
+                            mkdir -p ${odcDataDir} && chown -R 1000:1000 ${odcDataDir}
+                            rm -f ${odcDataDir}/write.lock || true
+                            rm -f ${odcDataDir}/*.lock || true
+                        """
+                        withCredentials([string(credentialsId: 'nvd-api-key', variable: 'NVD_API_KEY')]) {
+                            withDockerContainer(image: 'owasp/dependency-check', args: "--entrypoint='' -v ${odcDataDir}:/usr/share/dependency-check/data -e NVD_API_KEY=${NVD_API_KEY}") {
+                                sh '''
+                                    echo "Updating CVE database..."
+                                    /usr/share/dependency-check/bin/dependency-check.sh --updateonly --data /usr/share/dependency-check/data --nvdApiKey $NVD_API_KEY || echo "DB update locked or failed, continuing..."
+                                '''
+                            }
                         }
                     }
                 }
@@ -101,6 +108,7 @@ pipeline {
                     def odcDataDir = "${env.WORKSPACE}/odc-data"
                     withDockerContainer(image: 'owasp/dependency-check', args: "--entrypoint='' -v ${odcDataDir}:/usr/share/dependency-check/data") {
                         sh '''
+                            echo "Running Dependency-Check analysis..."
                             /usr/share/dependency-check/bin/dependency-check.sh \
                                 --project DevSecOps-proyectoUnir \
                                 --scan src \
@@ -121,6 +129,16 @@ pipeline {
             }
         }
 
+        stage('Login to GHCR') {
+            steps {
+                withCredentials([string(credentialsId: 'GHCR_TOKEN', variable: 'GHCR_TOKEN')]) {
+                    sh '''
+                        echo $GHCR_TOKEN | docker login ghcr.io -u luciallz --password-stdin
+                    '''
+                }
+            }
+        }
+
         stage('Build App Docker Image') {
             steps {
                 sh 'docker build -f Dockerfile.jenkins -t myapp-image .'
@@ -130,9 +148,12 @@ pipeline {
         stage('Create Docker Network') {
             steps {
                 script {
-                    def net = sh(script: "docker network ls --filter name=zap-net -q", returnStdout: true).trim()
-                    if (!net) {
+                    def networkExists = sh(script: "docker network ls --filter name=zap-net -q", returnStdout: true).trim()
+                    if (!networkExists) {
+                        echo "Creating docker network zap-net"
                         sh "docker network create zap-net"
+                    } else {
+                        echo "Docker network zap-net already exists"
                     }
                 }
             }
@@ -142,29 +163,7 @@ pipeline {
             steps {
                 script {
                     sh "docker rm -f myapp || true"
-                    // Exponer puerto y mapear a host para verificación
-                    sh "docker run -d --name myapp --network zap-net -p 5000:5000 myapp-image"
-                    
-                    // Esperar 15 segundos para que la app inicie completamente
-                    sleep 15
-                    
-                    // Verificar logs de la aplicación
-                    sh "docker logs myapp"
-                    
-                    // Verificar acceso desde el host (temporal para debugging)
-                    sh "curl -v http://localhost:5000 || echo 'La aplicación no responde en el host'"
-                }
-            }
-        }
-
-        stage('Verify Network Connectivity') {
-            steps {
-                script {
-                    // Verificar que myapp está accesible desde la red zap-net
-                    sh """
-                        docker run --rm --network zap-net appropriate/curl \
-                        curl -v http://myapp:5000 || echo 'La aplicación no responde dentro de la red zap-net'
-                    """
+                    sh "docker run -d --name myapp --network zap-net myapp-image"
                 }
             }
         }
@@ -172,25 +171,19 @@ pipeline {
         stage('Run App and DAST with ZAP') {
             steps {
                 script {
-                    echo "Running ZAP baseline scan on http://myapp:5000"
+                    echo "Running ZAP baseline scan against http://myapp:5000"
                     sh """
-                        docker run --rm \
-                            --network zap-net \
-                            -v ${env.WORKSPACE}/zap:/zap/wrk:rw \
-                            -e ZAP_LOG_LEVEL=DEBUG \
-                            ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
+                        mkdir -p ${env.WORKSPACE}/zap
+                        docker run --rm --network zap-net -v ${env.WORKSPACE}/zap:/zap/wrk:rw owasp/zap2docker-weekly zap-baseline.py \
                             -t http://myapp:5000 \
                             -r /zap/wrk/zap-report.html \
-                            -J /zap/wrk/zap-report.json \
-                            -d
+                            -J /zap/wrk/zap-report.json
                     """
                 }
             }
             post {
                 always {
                     archiveArtifacts artifacts: 'zap/zap-report.html,zap/zap-report.json', allowEmptyArchive: true
-                    sh "docker logs myapp > ${env.WORKSPACE}/app.log 2>&1"
-                    archiveArtifacts artifacts: 'app.log', allowEmptyArchive: true
                 }
             }
         }
@@ -199,15 +192,16 @@ pipeline {
     post {
         always {
             echo 'Pipeline completed. Cleaning up...'
+            archiveArtifacts artifacts: 'zap/zap-report.html,zap/zap-report.json', allowEmptyArchive: true
         }
         success {
             echo 'Pipeline succeeded!'
         }
         unstable {
-            echo 'Pipeline completed with warnings.'
+            echo 'Pipeline completed with warnings'
         }
         failure {
-            echo 'Pipeline failed.'
+            echo 'Pipeline failed'
         }
     }
 }
