@@ -144,12 +144,15 @@ pipeline {
                     // Ejecutar app (sin --rm)
                     sh 'docker run -d --name myapp --network zap-net myapp-image'
 
-                    docker.image('ghcr.io/zaproxy/zaproxy:stable').inside("--network zap-net") {
+                    // Crear carpeta para reportes
+                    sh 'mkdir -p ${WORKSPACE}/zap/wrk'
+
+                    docker.image('ghcr.io/zaproxy/zaproxy:stable').inside("--network zap-net -v ${WORKSPACE}/zap/wrk:/zap/wrk") {
                         sh '''
                         zap-baseline.py \
                             -t http://myapp:5000 \
-                            -r zap-report.html \
-                            -J zap-report.json \
+                            -r /zap/wrk/zap-report.html \
+                            -J /zap/wrk/zap-report.json \
                             -c zap-config.yaml || true
                         '''
                     }
@@ -158,10 +161,12 @@ pipeline {
                     sh 'docker rm myapp || true'
                     sh 'docker network rm zap-net || true'
 
-                    archiveArtifacts artifacts: 'zap-report.html,zap-report.json'
+                    // Archivar desde la carpeta montada
+                    archiveArtifacts artifacts: 'zap/wrk/zap-report.html,zap/wrk/zap-report.json'
                 }
             }
         }
+
     }
 
     post {
