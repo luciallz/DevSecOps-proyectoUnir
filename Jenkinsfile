@@ -171,7 +171,7 @@ pipeline {
         stage('Run App and DAST with ZAP') {
             steps {
                 script {
-                    def zapDir = "/tmp/zap-data/${env.BUILD_ID}"
+                    def zapDir = "${env.WORKSPACE}/zap-output"
                     sh "mkdir -p ${zapDir}"
 
                     // Detener y eliminar contenedor anterior si está
@@ -183,13 +183,13 @@ pipeline {
                     // Esperar 10 segundos para que la app inicie
                     sh 'sleep 10'
 
-                    // Ejecutar ZAP
-                    docker.image('ghcr.io/zaproxy/zaproxy:stable').inside("--network zap-net") {
+                    // Ejecutar ZAP con volumen para guardar reportes
+                    docker.image('ghcr.io/zaproxy/zaproxy:stable').inside("--network zap-net -v ${zapDir}:/zap/wrk") {
                         sh '''
                         zap-baseline.py \
                             -t http://myapp:5000 \
-                            -r zap-report.html \
-                            -J zap-report.json \
+                            -r /zap/wrk/zap-report.html \
+                            -J /zap/wrk/zap-report.json \
                             -c zap-config.yaml || true
                         '''
                     }
@@ -198,7 +198,8 @@ pipeline {
                     sh 'docker stop myapp || true'
                     sh 'docker network rm zap-net || true'
 
-                    archiveArtifacts artifacts: 'zap-report.html,zap-report.json'
+                    // Archivar los reportes desde la carpeta zap-output
+                    archiveArtifacts artifacts: 'zap-output/zap-report.html,zap-output/zap-report.json'
                 }
             }
         }
