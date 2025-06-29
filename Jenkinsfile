@@ -181,7 +181,6 @@ pipeline {
         stage('Run App and DAST with ZAP') {
             steps {
                 script {
-                    // Carpeta fuera del workspace para que Jenkins no la toque
                     def zapDir = "/tmp/zap-data/${env.BUILD_ID}"
                     sh "mkdir -p ${zapDir}"
 
@@ -194,7 +193,7 @@ pipeline {
                             zap.sh -cmd -autorun /zap/wrk/zap-config.yaml
                     """
 
-                    // Copiar sólo el reporte final al workspace para archivarlo en Jenkins
+                    // Copiar sólo el reporte al workspace
                     sh "cp ${zapDir}/zap-report.html ${env.WORKSPACE}/zap-report.html || true"
                 }
             }
