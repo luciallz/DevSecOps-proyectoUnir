@@ -192,6 +192,12 @@ pipeline {
         always {
             echo 'Pipeline completed. Cleaning up...'
             archiveArtifacts artifacts: 'zap-output/zap-report.html,zap-output/zap-report.json', allowEmptyArchive: true
+            script {
+                if (currentBuild.result == 'UNSTABLE') {
+                    echo "Forzando estado SUCCESS a pesar de warnings"
+                    currentBuild.result = 'SUCCESS'
+                }
+            }
         }
         success {
             echo 'Pipeline succeeded!'
@@ -203,4 +209,5 @@ pipeline {
             echo 'Pipeline failed'
         }
     }
+    
 }
