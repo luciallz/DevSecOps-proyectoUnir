@@ -172,14 +172,17 @@ pipeline {
             steps {
                 script {
                     echo "Running ZAP scan against http://myapp:5000"
-                    sh """
-                        docker run --rm --network zap-net -v ${env.WORKSPACE}/zap:/zap/wrk:rw owasp/zap2docker-weekly \
-                        zap-baseline.py \
-                        -t http://myapp:5000 \
-                        -r /zap/wrk/zap-report.html \
-                        -J /zap/wrk/zap-report.json \
-                        -c /zap/wrk/zap-config.yaml
-                    """
+
+                    sh '''
+                        docker run --rm --network zap-net \
+                            -v ${WORKSPACE}/zap:/zap/wrk:rw \
+                            ghcr.io/zaproxy/zap-automation:latest \
+                            zap-baseline.py \
+                            -t http://myapp:5000 \
+                            -r /zap/wrk/zap-report.html \
+                            -J /zap/wrk/zap-report.json \
+                            -c /zap/wrk/zap-config.yaml
+                    '''
                 }
             }
             post {
@@ -188,7 +191,6 @@ pipeline {
                 }
             }
         }
-
 
     }
 
