@@ -9,12 +9,7 @@ pipeline {
     stages {
         stage('Clean Workspace') {
             steps {
-                sh '''
-                     echo "Limpiando workspace manualmente..."
-                    rm -rf ${WORKSPACE}/* || true
-                    rm -rf ${WORKSPACE}/.* 2>/dev/null || true
-                    rm -rf ${WORKSPACE}/zap || true     # <-- Limpieza explícita de zap
-                '''
+                deleteDir()
             }
         }
 
@@ -27,11 +22,11 @@ pipeline {
         stage('Setup Python') {
             steps {
                 sh '''
-                    rm -rf venv
-                    python3 -m venv venv
-                    venv/bin/pip install --upgrade pip
-                    venv/bin/pip install -r requirements.txt
-                    venv/bin/pip list | grep -E "flask|pytest|cov"
+                rm -rf venv
+                python3 -m venv venv
+                venv/bin/pip install --upgrade pip
+                venv/bin/pip install -r requirements.txt
+                venv/bin/pip list | grep -E "flask|pytest|cov"
                 '''
             }
         }
@@ -40,14 +35,14 @@ pipeline {
             steps {
                 withEnv(['FLASK_ENV=testing']) {
                     sh '''
-                        export PYTHONPATH=$PYTHONPATH:$(pwd)
-                        mkdir -p test-reports
-                        venv/bin/python -m pytest tests/ \
-                            --junitxml=test-reports/results.xml \
-                            --cov=src \
-                            --cov-report=xml:coverage.xml \
-                            --cov-report=term-missing \
-                            --cov-fail-under=80 -v
+                    export PYTHONPATH=$PYTHONPATH:$(pwd)
+                    mkdir -p test-reports
+                    venv/bin/python -m pytest tests/ \
+                        --junitxml=test-reports/results.xml \
+                        --cov=src \
+                        --cov-report=xml:coverage.xml \
+                        --cov-report=term-missing \
+                        --cov-fail-under=80 -v
                     '''
                 }
             }
@@ -56,16 +51,16 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube') {
-                    sh '''
-                        ${SONAR_SCANNER_HOME}/bin/sonar-scanner \
-                            -Dsonar.projectKey=DevSecOps-proyectoUnir \
-                            -Dsonar.python.version=${PYTHON_VERSION} \
-                            -Dsonar.sources=. \
-                            -Dsonar.tests=tests \
-                            -Dsonar.exclusions=venv/**,**/site-packages/** \
-                            -Dsonar.python.coverage.reportPaths=coverage.xml \
-                            -Dsonar.python.xunit.reportPath=test-reports/results.xml
-                    '''
+                    sh """
+                    ${SONAR_SCANNER_HOME}/bin/sonar-scanner \
+                        -Dsonar.projectKey=DevSecOps-proyectoUnir \
+                        -Dsonar.python.version=${PYTHON_VERSION} \
+                        -Dsonar.sources=. \
+                        -Dsonar.tests=tests \
+                        -Dsonar.exclusions=venv/**,**/site-packages/** \
+                        -Dsonar.python.coverage.reportPaths=coverage.xml \
+                        -Dsonar.python.xunit.reportPath=test-reports/results.xml
+                    """
                 }
             }
         }
@@ -89,11 +84,11 @@ pipeline {
                 timeout(time: 60, unit: 'MINUTES') {
                     script {
                         def odcDataDir = "${env.WORKSPACE}/odc-data"
-                        sh '''
+                        sh """
                             mkdir -p ${odcDataDir} && chown -R 1000:1000 ${odcDataDir}
                             rm -f ${odcDataDir}/write.lock || true
                             rm -f ${odcDataDir}/*.lock || true
-                        '''
+                        """
                         withCredentials([string(credentialsId: 'nvd-api-key', variable: 'NVD_API_KEY')]) {
                             withDockerContainer(image: 'owasp/dependency-check', args: "--entrypoint='' -v ${odcDataDir}:/usr/share/dependency-check/data -e NVD_API_KEY=${NVD_API_KEY}") {
                                 sh '''
@@ -137,9 +132,9 @@ pipeline {
         stage('Login to GHCR') {
             steps {
                 withCredentials([string(credentialsId: 'GHCR_TOKEN', variable: 'GHCR_TOKEN')]) {
-                    sh '''
-                        echo $GHCR_TOKEN | docker login ghcr.io -u luciallz --password-stdin
-                    '''
+                sh '''
+                    echo $GHCR_TOKEN | docker login ghcr.io -u luciallz --password-stdin
+                '''
                 }
             }
         }
@@ -176,38 +171,29 @@ pipeline {
         stage('Run App and DAST with ZAP') {
             steps {
                 script {
-                    echo "Limpiando carpeta ZAP para evitar errores de permisos..."
-                    sh "rm -rf ${env.WORKSPACE}/zap && mkdir -p ${env.WORKSPACE}/zap"
-
                     echo "Running ZAP Automation Framework scan against http://myapp:5000"
-                    sh '''
+                    sh """
                         docker run --rm \
                             --network zap-net \
-                            -u $(id -u):$(id -g) \
                             -v ${env.WORKSPACE}/zap:/zap/wrk:rw \
                             ghcr.io/zaproxy/zap-automation:0.15.0 \
                             zap.sh -cmd -autorun /zap/wrk/zap-config.yaml
-                    '''
-
-                    echo "Corrigiendo permisos en carpeta zap para evitar problemas de borrado posteriores..."
-                    sh '''
-                        chown -R $(id -u):$(id -g) ${WORKSPACE}/zap || true
-                        chmod -R u+w ${WORKSPACE}/zap || true
-                    '''
+                    """
                 }
             }
             post {
                 always {
-                    archiveArtifacts artifacts: 'zap/zap-report.html,zap/zap-report.json', allowEmptyArchive: true
+                    archiveArtifacts artifacts: 'zap/zap-report.html', allowEmptyArchive: true
                 }
             }
         }
+
     }
 
     post {
         always {
             echo 'Pipeline completed. Cleaning up...'
-            sh 'rm -rf ${WORKSPACE}/zap || true'  // Limpieza final para evitar problemas en próximo build
+            archiveArtifacts artifacts: 'zap/zap-report.html,zap/zap-report.json', allowEmptyArchive: true
         }
         success {
             echo 'Pipeline succeeded!'
