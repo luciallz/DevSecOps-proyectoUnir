@@ -184,7 +184,7 @@ pipeline {
                     """
                     sh "chmod -R 777 ${zapDir} || true"
 
-                    // Copiar reporte al workspace si quieres archivarlo después
+                    // Copiar reporte al workspace para archivarlo luego
                     sh "cp ${zapDir}/zap-report.html ${env.WORKSPACE}/zap-report.html || true"
                 }
             }
