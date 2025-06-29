@@ -131,9 +131,9 @@ pipeline {
 
         stage('Login to GHCR') {
             steps {
-                withCredentials([string(credentialsId: 'github-token', variable: 'github-token')]) {
+                withCredentials([string(credentialsId: 'GHCR_TOKEN', variable: 'GHCR_TOKEN')]) {
                 sh '''
-                    echo $github-token | docker login ghcr.io -u luciallz --password-stdin
+                    echo $GHCR_TOKEN | docker login ghcr.io -u luciallz --password-stdin
                 '''
                 }
             }
