@@ -184,13 +184,13 @@ pipeline {
                     sh 'sleep 10'
 
                     // Ejecutar ZAP con volumen para guardar reportes
-                    docker.image('ghcr.io/zaproxy/zaproxy:stable').inside("--network zap-net -v ${zapDir}:/zap/wrk") {
+                    docker.image('ghcr.io/zaproxy/zaproxy:stable').inside("--network zap-net -v ${zapDir}:/zap/wrk -v ${env.WORKSPACE}/zap-config.yaml:/zap/wrk/zap-config.yaml") {
                         sh '''
                         zap-baseline.py \
                             -t http://myapp:5000 \
                             -r /zap/wrk/zap-report.html \
                             -J /zap/wrk/zap-report.json \
-                            -c zap-config.yaml || true
+                            -c /zap/wrk/zap-config.yaml || true
                         '''
                     }
 
