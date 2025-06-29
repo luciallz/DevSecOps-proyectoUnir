@@ -129,6 +129,16 @@ pipeline {
             }
         }
 
+        stage('Login to GHCR') {
+            steps {
+                withCredentials([string(credentialsId: 'github-token', variable: 'github-token')]) {
+                sh '''
+                    echo $github-token | docker login ghcr.io -u luciallz --password-stdin
+                '''
+                }
+            }
+        }
+
         stage('Build App Docker Image') {
             steps {
                 sh 'docker build -f Dockerfile.jenkins -t myapp-image .'
@@ -138,23 +148,20 @@ pipeline {
         stage('Run App and DAST with ZAP') {
             steps {
                 script {
-                    def zapPath = "${env.WORKSPACE}/zap"
-
-                    sh """
-                        docker run --rm --network zap-net \
-                        -v ${zapPath}:/zap/wrk:rw \
-                        owasp/zap2docker-stable \
-                        zap-baseline.py \
-                        -t http://myapp:5000 \
-                        -r /zap/wrk/zap-report.html \
-                        -J /zap/wrk/zap-report.json \
-                        -c /zap/wrk/zap-config.yaml
-                    """
+                sh """
+                    docker run --rm --network zap-net \
+                    -v ${env.WORKSPACE}/zap:/zap/wrk:rw \
+                    ghcr.io/zaproxy/zap-baseline:latest \
+                    -t http://myapp:5000 \
+                    -r /zap/wrk/zap-report.html \
+                    -J /zap/wrk/zap-report.json \
+                    -c /zap/wrk/zap-config.yaml
+                """
                 }
             }
             post {
                 always {
-                    archiveArtifacts artifacts: 'zap/zap-report.html,zap/zap-report.json', allowEmptyArchive: true
+                archiveArtifacts artifacts: 'zap/zap-report.html,zap/zap-report.json', allowEmptyArchive: true
                 }
             }
         }
