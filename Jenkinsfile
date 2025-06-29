@@ -86,18 +86,26 @@ pipeline {
                 sh 'rm -rf odc-data dependency-check-reports && mkdir -p odc-data dependency-check-reports && chown -R 1000:1000 odc-data'
                 withDockerContainer(image: 'owasp/dependency-check', args: '--entrypoint="" -v $PWD/odc-data:/usr/share/dependency-check/data') {
                     sh '''
-                    /usr/share/dependency-check/bin/dependency-check.sh \
-                        --project DevSecOps-proyectoUnir \
-                        --scan src \
-                        --out dependency-check-reports \
-                        --format HTML \
-                        --format XML \
-                        --disablePyDist \
-                        --disablePyPkg \
-                        --exclude venv \
-                        --exclude .git \
-                        --exclude tests \
-                        --noupdate
+                        if [ ! -f "/usr/share/dependency-check/data/db.lock" ]; then
+                            echo "Primera ejecución: actualizando la base de datos de CVEs..."
+                            UPDATE_FLAG=""
+                        else
+                            echo "Base de datos ya existe: evitando actualización para ir más rápido."
+                            UPDATE_FLAG="--noupdate"
+                        fi
+
+                        /usr/share/dependency-check/bin/dependency-check.sh \
+                            --project DevSecOps-proyectoUnir \
+                            --scan src \
+                            --out dependency-check-reports \
+                            --format HTML \
+                            --format XML \
+                            --disablePyDist \
+                            --disablePyPkg \
+                            --exclude venv \
+                            --exclude .git \
+                            --exclude tests \
+                            $UPDATE_FLAG
                     '''
                 }
             }
