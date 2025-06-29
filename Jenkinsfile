@@ -141,7 +141,7 @@ pipeline {
 
         stage('Build App Docker Image') {
             steps {
-                sh 'docker build -f Dockerfile.jenkins -t myapp-image .'
+                sh 'docker build -f Dockerfile.app -t myapp-image .'
             }
         }
 
