@@ -173,13 +173,13 @@ pipeline {
                 script {
                     echo "Running ZAP Automation Framework scan against http://myapp:5000"
                     sh """
-                         docker run --rm \
+                        docker run --rm \
                             --network zap-net \
                             -v ${env.WORKSPACE}/zap:/zap/wrk:rw \
                             ghcr.io/zaproxy/zap-automation:0.15.0 \
                             zap.sh -cmd -autorun /zap/wrk/zap-config.yaml
-                        chmod -R 777 ${env.WORKSPACE}/zap || true
                     """
+                    sh "chmod -R 777 ${env.WORKSPACE}/zap || true"
                 }
             }
             post {
