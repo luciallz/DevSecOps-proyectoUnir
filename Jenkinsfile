@@ -145,6 +145,29 @@ pipeline {
             }
         }
 
+        stage('Create Docker Network') {
+            steps {
+                script {
+                    def networkExists = sh(script: "docker network ls --filter name=zap-net -q", returnStdout: true).trim()
+                    if (!networkExists) {
+                        echo "Creating docker network zap-net"
+                        sh "docker network create zap-net"
+                    } else {
+                        echo "Docker network zap-net already exists"
+                    }
+                }
+            }
+        }
+
+        stage('Run App Container') {
+            steps {
+                script {
+                    sh "docker rm -f myapp || true"
+                    sh "docker run -d --name myapp --network zap-net myapp-image"
+                }
+            }
+        }
+
         stage('Run App and DAST with ZAP') {
             steps {
                 script {
@@ -164,6 +187,7 @@ pipeline {
                 }
             }
         }
+
 
     }
 
