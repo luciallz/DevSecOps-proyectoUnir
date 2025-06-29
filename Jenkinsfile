@@ -92,8 +92,8 @@ pipeline {
                         withCredentials([string(credentialsId: 'nvd-api-key', variable: 'NVD_API_KEY')]) {
                             withDockerContainer(image: 'owasp/dependency-check', args: "--entrypoint='' -v ${odcDataDir}:/usr/share/dependency-check/data -e NVD_API_KEY=${NVD_API_KEY}") {
                                 sh '''
-                                    echo "Updating CVE database..."
-                                    /usr/share/dependency-check/bin/dependency-check.sh --updateonly --data /usr/share/dependency-check/data --nvdApiKey $NVD_API_KEY || echo "DB update locked or failed, continuing..."
+                                    echo "Actualizando base de datos CVE (una sola vez)..."
+                                    /usr/share/dependency-check/bin/dependency-check.sh --updateonly --data /usr/share/dependency-check/data --nvdApiKey $NVD_API_KEY || echo "Actualización DB ya en uso o falló, continuando..."
                                 '''
                             }
                         }
@@ -108,7 +108,7 @@ pipeline {
                     def odcDataDir = "${env.WORKSPACE}/odc-data"
                     withDockerContainer(image: 'owasp/dependency-check', args: "--entrypoint='' -v ${odcDataDir}:/usr/share/dependency-check/data") {
                         sh '''
-                            echo "Running Dependency-Check analysis..."
+                            echo "Ejecutando análisis ODC sin actualizar la base..."
                             /usr/share/dependency-check/bin/dependency-check.sh \
                                 --project DevSecOps-proyectoUnir \
                                 --scan src \
@@ -132,9 +132,9 @@ pipeline {
         stage('Login to GHCR') {
             steps {
                 withCredentials([string(credentialsId: 'GHCR_TOKEN', variable: 'GHCR_TOKEN')]) {
-                    sh '''
-                        echo $GHCR_TOKEN | docker login ghcr.io -u luciallz --password-stdin
-                    '''
+                sh '''
+                    echo $GHCR_TOKEN | docker login ghcr.io -u luciallz --password-stdin
+                '''
                 }
             }
         }
@@ -174,7 +174,7 @@ pipeline {
                     echo "Running ZAP baseline scan against http://myapp:5000"
                     sh """
                         mkdir -p ${env.WORKSPACE}/zap
-                        docker run --rm --network zap-net -v ${env.WORKSPACE}/zap:/zap/wrk:rw owasp/zap2docker-weekly zap-baseline.py \
+                        docker run --rm --network zap-net -v ${env.WORKSPACE}/zap:/zap/wrk:rw owasp/zap2docker-stable zap-baseline.py \
                             -t http://myapp:5000 \
                             -r /zap/wrk/zap-report.html \
                             -J /zap/wrk/zap-report.json
