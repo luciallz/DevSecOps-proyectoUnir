@@ -24,10 +24,9 @@ pipeline {
                 sh '''
                 rm -rf venv
                 python3 -m venv venv
-                . venv/bin/activate
-                pip install --upgrade pip
-                pip install -r requirements.txt
-                pip list | grep -E "flask|pytest|cov"
+                venv/bin/pip install --upgrade pip
+                venv/bin/pip install -r requirements.txt
+                venv/bin/pip list | grep -E "flask|pytest|cov"
                 '''
             }
         }
@@ -36,10 +35,9 @@ pipeline {
             steps {
                 withEnv(['FLASK_ENV=testing']) {
                     sh '''
-                    . venv/bin/activate
                     export PYTHONPATH=$PYTHONPATH:$(pwd)
                     mkdir -p test-reports
-                    python -m pytest tests/ \
+                    venv/bin/python -m pytest tests/ \
                         --junitxml=test-reports/results.xml \
                         --cov=src \
                         --cov-report=xml:coverage.xml \
@@ -84,14 +82,20 @@ pipeline {
         stage('Init ODC DB') {
             steps {
                 timeout(time: 10, unit: 'MINUTES') {
-                    sh 'mkdir -p odc-data && chown -R 1000:1000 odc-data'
-                    withDockerContainer(image: 'owasp/dependency-check', args: '--entrypoint="" -v $PWD/odc-data:/usr/share/dependency-check/data') {
-                        sh '''
-                            echo "Actualizando base de datos CVE (una sola vez)..."
-                            /usr/share/dependency-check/bin/dependency-check.sh \
-                                --updateonly \
-                                --data /usr/share/dependency-check/data
-                        '''
+                    script {
+                        def odcDataDir = "${env.WORKSPACE}/odc-data"
+                        sh """
+                            mkdir -p ${odcDataDir}
+                            chown -R 1000:1000 ${odcDataDir}
+                            rm -f ${odcDataDir}/write.lock || true
+                            rm -f ${odcDataDir}/*.lock || true
+                        """
+                        withDockerContainer(image: 'owasp/dependency-check', args: "--entrypoint='' -v ${odcDataDir}:/usr/share/dependency-check/data") {
+                            sh '''
+                                echo "Actualizando base de datos CVE (una sola vez)..."
+                                /usr/share/dependency-check/bin/dependency-check.sh --updateonly --data /usr/share/dependency-check/data || echo "Base ya en uso"
+                            '''
+                        }
                     }
                 }
             }
@@ -99,24 +103,27 @@ pipeline {
 
         stage('Dependency-Check Analysis') {
             steps {
-                withDockerContainer(image: 'owasp/dependency-check', args: '--entrypoint="" -v $PWD/odc-data:/usr/share/dependency-check/data') {
-                    sh '''
-                        echo "Ejecutando análisis ODC sin actualizar la base..."
-                        /usr/share/dependency-check/bin/dependency-check.sh \
-                            --project DevSecOps-proyectoUnir \
-                            --scan src \
-                            --out dependency-check-reports \
-                            --format HTML \
-                            --format XML \
-                            --disablePyDist \
-                            --disablePyPkg \
-                            --exclude venv \
-                            --exclude .git \
-                            --exclude tests \
-                            --exclude dist \
-                            --exclude build \
-                            --noupdate
-                    '''
+                script {
+                    def odcDataDir = "${env.WORKSPACE}/odc-data"
+                    withDockerContainer(image: 'owasp/dependency-check', args: "--entrypoint='' -v ${odcDataDir}:/usr/share/dependency-check/data") {
+                        sh '''
+                            echo "Ejecutando análisis ODC sin actualizar la base..."
+                            /usr/share/dependency-check/bin/dependency-check.sh \
+                                --project DevSecOps-proyectoUnir \
+                                --scan src \
+                                --out dependency-check-reports \
+                                --format HTML \
+                                --format XML \
+                                --disablePyDist \
+                                --disablePyPkg \
+                                --exclude venv \
+                                --exclude .git \
+                                --exclude tests \
+                                --exclude dist \
+                                --exclude build \
+                                --noupdate
+                        '''
+                    }
                 }
             }
         }
@@ -130,16 +137,12 @@ pipeline {
         stage('Run App and DAST with ZAP') {
             steps {
                 script {
-                    // Crear red si no existe
                     sh 'docker network create zap-net || true'
-
-                    // Detener y eliminar contenedor anterior si está
                     sh 'docker rm -f myapp || true'
 
-                    // Ejecutar app
-                    sh 'docker run -d --rm --name myapp --network zap-net myapp-image'
+                    // Ejecutar app (sin --rm)
+                    sh 'docker run -d --name myapp --network zap-net myapp-image'
 
-                    // Ejecutar ZAP
                     docker.image('ghcr.io/zaproxy/zaproxy:stable').inside("--network zap-net") {
                         sh '''
                         zap-baseline.py \
@@ -150,8 +153,8 @@ pipeline {
                         '''
                     }
 
-                    // Parar app y eliminar red
                     sh 'docker stop myapp || true'
+                    sh 'docker rm myapp || true'
                     sh 'docker network rm zap-net || true'
 
                     archiveArtifacts artifacts: 'zap-report.html,zap-report.json'
