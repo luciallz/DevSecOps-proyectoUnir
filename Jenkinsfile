@@ -171,20 +171,26 @@ pipeline {
         stage('Run App and DAST with ZAP') {
             steps {
                 script {
-                    echo "Running ZAP Automation Framework scan against http://myapp:5000"
+                    def zapDir = "/tmp/zap-data/${env.BUILD_ID}"
+                    sh "mkdir -p ${zapDir}"
+
+                    echo "Running ZAP scan, output in ${zapDir}"
                     sh """
                         docker run --rm \
                             --network zap-net \
-                            -v ${env.WORKSPACE}/zap:/zap/wrk:rw \
+                            -v ${zapDir}:/zap/wrk:rw \
                             ghcr.io/zaproxy/zap-automation:0.15.0 \
                             zap.sh -cmd -autorun /zap/wrk/zap-config.yaml
                     """
-                    sh "chmod -R 777 ${env.WORKSPACE}/zap || true"
+                    sh "chmod -R 777 ${zapDir} || true"
+
+                    // Copiar reporte al workspace si quieres archivarlo después
+                    sh "cp ${zapDir}/zap-report.html ${env.WORKSPACE}/zap-report.html || true"
                 }
             }
             post {
                 always {
-                    archiveArtifacts artifacts: 'zap/zap-report.html', allowEmptyArchive: true
+                    archiveArtifacts artifacts: 'zap-report.html', allowEmptyArchive: true
                 }
             }
         }
