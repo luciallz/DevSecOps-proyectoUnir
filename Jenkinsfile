@@ -148,24 +148,22 @@ pipeline {
         stage('Run App and DAST with ZAP') {
             steps {
                 script {
-                sh """
-                    docker run --rm --network zap-net \
-                    -v ${env.WORKSPACE}/zap:/zap/wrk:rw \
-                    ghcr.io/zaproxy/zaproxy:latest \
-                    zap-baseline.py \
-                    -t http://myapp:5000 \
-                    -r /zap/wrk/zap-report.html \
-                    -J /zap/wrk/zap-report.json \
-                    -c /zap/wrk/zap-config.yaml
-                """
+                    echo "Running ZAP scan against http://myapp:5000"
+                    sh """
+                        docker run --rm --network zap-net -v ${env.WORKSPACE}/zap:/zap/wrk:rw ghcr.io/zaproxy/zap-baseline:latest \
+                        -t http://myapp:5000 \
+                        -r /zap/wrk/zap-report.html \
+                        -J /zap/wrk/zap-report.json \
+                        -c /zap/wrk/zap-config.yaml
+                    """
                 }
             }
             post {
                 always {
-                archiveArtifacts artifacts: 'zap/zap-report.html,zap/zap-report.json', allowEmptyArchive: true
+                    archiveArtifacts artifacts: 'zap/zap-report.html,zap/zap-report.json', allowEmptyArchive: true
                 }
             }
-            }
+        }
 
     }
 
