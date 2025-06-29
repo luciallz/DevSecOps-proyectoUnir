@@ -51,7 +51,7 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube') {
-                    sh """
+                    sh '''
                         ${SONAR_SCANNER_HOME}/bin/sonar-scanner \
                             -Dsonar.projectKey=DevSecOps-proyectoUnir \
                             -Dsonar.python.version=${PYTHON_VERSION} \
@@ -60,7 +60,7 @@ pipeline {
                             -Dsonar.exclusions=venv/**,**/site-packages/** \
                             -Dsonar.python.coverage.reportPaths=coverage.xml \
                             -Dsonar.python.xunit.reportPath=test-reports/results.xml
-                    """
+                    '''
                 }
             }
         }
@@ -84,11 +84,11 @@ pipeline {
                 timeout(time: 60, unit: 'MINUTES') {
                     script {
                         def odcDataDir = "${env.WORKSPACE}/odc-data"
-                        sh """
+                        sh '''
                             mkdir -p ${odcDataDir} && chown -R 1000:1000 ${odcDataDir}
                             rm -f ${odcDataDir}/write.lock || true
                             rm -f ${odcDataDir}/*.lock || true
-                        """
+                        '''
                         withCredentials([string(credentialsId: 'nvd-api-key', variable: 'NVD_API_KEY')]) {
                             withDockerContainer(image: 'owasp/dependency-check', args: "--entrypoint='' -v ${odcDataDir}:/usr/share/dependency-check/data -e NVD_API_KEY=${NVD_API_KEY}") {
                                 sh '''
@@ -175,14 +175,14 @@ pipeline {
                     sh "rm -rf ${env.WORKSPACE}/zap && mkdir -p ${env.WORKSPACE}/zap"
 
                     echo "Running ZAP Automation Framework scan against http://myapp:5000"
-                    sh """
+                    sh '''
                         docker run --rm \
                             --network zap-net \
                             -u $(id -u):$(id -g) \
                             -v ${env.WORKSPACE}/zap:/zap/wrk:rw \
                             ghcr.io/zaproxy/zap-automation:0.15.0 \
                             zap.sh -cmd -autorun /zap/wrk/zap-config.yaml
-                    """
+                    '''
                 }
             }
             post {
