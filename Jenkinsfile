@@ -171,22 +171,23 @@ pipeline {
         stage('Run App and DAST with ZAP') {
             steps {
                 script {
-                    echo "Running ZAP baseline scan against http://myapp:5000"
+                    echo "Running ZAP Automation Framework scan against http://myapp:5000"
                     sh """
-                        mkdir -p ${env.WORKSPACE}/zap
-                        docker run --rm --network zap-net -v ${env.WORKSPACE}/zap:/zap/wrk:rw owasp/zap2docker-stable zap-baseline.py \
-                            -t http://myapp:5000 \
-                            -r /zap/wrk/zap-report.html \
-                            -J /zap/wrk/zap-report.json
+                        docker run --rm \
+                            --network zap-net \
+                            -v ${env.WORKSPACE}/zap:/zap/wrk:rw \
+                            ghcr.io/zaproxy/zap-automation:0.15.0 \
+                            zap.sh -cmd -autorun /zap/wrk/zap-config.yaml
                     """
                 }
             }
             post {
                 always {
-                    archiveArtifacts artifacts: 'zap/zap-report.html,zap/zap-report.json', allowEmptyArchive: true
+                    archiveArtifacts artifacts: 'zap/zap-report.html', allowEmptyArchive: true
                 }
             }
         }
+
     }
 
     post {
