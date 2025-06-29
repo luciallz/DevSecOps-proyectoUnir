@@ -142,7 +142,29 @@ pipeline {
             steps {
                 script {
                     sh "docker rm -f myapp || true"
-                    sh "docker run -d --name myapp --network zap-net myapp-image"
+                    // Exponer puerto y mapear a host para verificación
+                    sh "docker run -d --name myapp --network zap-net -p 5000:5000 myapp-image"
+                    
+                    // Esperar 15 segundos para que la app inicie completamente
+                    sleep 15
+                    
+                    // Verificar logs de la aplicación
+                    sh "docker logs myapp"
+                    
+                    // Verificar acceso desde el host (temporal para debugging)
+                    sh "curl -v http://localhost:5000 || echo 'La aplicación no responde en el host'"
+                }
+            }
+        }
+
+        stage('Verify Network Connectivity') {
+            steps {
+                script {
+                    // Verificar que myapp está accesible desde la red zap-net
+                    sh """
+                        docker run --rm --network zap-net appropriate/curl \
+                        curl -v http://myapp:5000 || echo 'La aplicación no responde dentro de la red zap-net'
+                    """
                 }
             }
         }
@@ -155,16 +177,20 @@ pipeline {
                         docker run --rm \
                             --network zap-net \
                             -v ${env.WORKSPACE}/zap:/zap/wrk:rw \
-                            owasp/zap2docker-stable zap-baseline.py \
+                            -e ZAP_LOG_LEVEL=DEBUG \
+                            ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
                             -t http://myapp:5000 \
                             -r /zap/wrk/zap-report.html \
-                            -J /zap/wrk/zap-report.json
+                            -J /zap/wrk/zap-report.json \
+                            -d
                     """
                 }
             }
             post {
                 always {
                     archiveArtifacts artifacts: 'zap/zap-report.html,zap/zap-report.json', allowEmptyArchive: true
+                    sh "docker logs myapp > ${env.WORKSPACE}/app.log 2>&1"
+                    archiveArtifacts artifacts: 'app.log', allowEmptyArchive: true
                 }
             }
         }
