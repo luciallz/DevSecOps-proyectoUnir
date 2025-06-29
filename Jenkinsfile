@@ -9,20 +9,7 @@ pipeline {
     stages {
         stage('Clean Workspace') {
             steps {
-                // Cambia deleteDir() por una limpieza más controlada
-                script {
-                    try {
-                        deleteDir()
-                    } catch (e) {
-                        echo "Warning: Failed to fully clean workspace: ${e}"
-                        sh '''
-                            # Limpieza manual selectiva
-                            rm -rf venv/ test-reports/ coverage.xml || true
-                            find . -name "*.pyc" -delete || true
-                            find . -name "__pycache__" -exec rm -rf {} + || true
-                        '''
-                    }
-                }
+                deleteDir()
             }
         }
 
@@ -180,56 +167,30 @@ pipeline {
                 }
             }
         }
-        
-        stage('Cleanup old ZAP data') {
-            steps {
-                script {
-                    sh '''
-                        find /tmp/zap-data -mindepth 1 -maxdepth 1 -type d -mtime +1 -exec rm -rf {} +
-                    '''
-                }
-            }
-        }
 
         stage('Run App and DAST with ZAP') {
             steps {
                 script {
-                    sh "mkdir -p ${env.ZAP_DIR} && chmod -R 777 ${env.ZAP_DIR}"
-                    
-                    echo "Running ZAP scan, output in ${env.ZAP_DIR}"
+                    def zapDir = "/tmp/zap-data/${env.BUILD_ID}"
+                    sh "mkdir -p ${zapDir}"
+
+                    echo "Running ZAP scan, output in ${zapDir}"
                     sh """
                         docker run --rm \
                             --network zap-net \
-                            -v ${env.ZAP_DIR}:/zap/wrk:rw \
-                            -u root \
+                            -v ${zapDir}:/zap/wrk:rw \
                             ghcr.io/zaproxy/zap-automation:0.15.0 \
                             zap.sh -cmd -autorun /zap/wrk/zap-config.yaml
                     """
+                    sh "chmod -R 777 ${zapDir} || true"
 
-                    // Copiar reportes al workspace con permisos adecuados
-                    sh """
-                        mkdir -p ${env.WORKSPACE}/zap || true
-                        cp ${env.ZAP_DIR}/zap-report.html ${env.WORKSPACE}/zap/ || true
-                        chmod -R 755 ${env.WORKSPACE}/zap
-                    """
+                    // Copiar reporte al workspace para archivarlo luego
+                    sh "cp ${zapDir}/zap-report.html ${env.WORKSPACE}/zap-report.html || true"
                 }
             }
             post {
                 always {
-                    archiveArtifacts artifacts: 'zap/zap-report.html', allowEmptyArchive: true
-                }
-            }
-        }
-
-        stage('Post-Cleanup') {
-            steps {
-                script {
-                    // Limpiar contenedores y red
-                    sh "docker rm -f myapp || true"
-                    sh "docker network rm zap-net || true"
-                    
-                    // Limpiar directorio ZAP temporal
-                    sh "rm -rf ${env.ZAP_DIR} || true"
+                    archiveArtifacts artifacts: 'zap-report.html', allowEmptyArchive: true
                 }
             }
         }
@@ -239,12 +200,7 @@ pipeline {
     post {
         always {
             echo 'Pipeline completed. Cleaning up...'
-            // Solo archivar si existe
-            script {
-                if (fileExists('zap/zap-report.html')) {
-                    archiveArtifacts artifacts: 'zap/zap-report.html', allowEmptyArchive: true
-                }
-            }
+            archiveArtifacts artifacts: 'zap/zap-report.html,zap/zap-report.json', allowEmptyArchive: true
         }
         success {
             echo 'Pipeline succeeded!'
