@@ -17,8 +17,9 @@ pipeline {
             steps {
                 script {
                     sh '''
-                        echo "Forzando borrado de zap/ si existe (por permisos de root previos)"
-                        sudo rm -rf $WORKSPACE/zap || true
+                        echo "Limpiando workspace manualmente por posibles problemas de permisos..."
+                        rm -rf ${WORKSPACE}/* || true
+                        rm -rf ${WORKSPACE}/.* 2>/dev/null || true
                     '''
                 }
             }
