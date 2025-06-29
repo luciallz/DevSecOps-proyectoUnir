@@ -174,32 +174,16 @@ pipeline {
                     def zapDir = "${env.WORKSPACE}/zap-output"
                     sh "mkdir -p ${zapDir}"
 
-                    // Detener y eliminar contenedor anterior si está
-                    sh 'docker rm -f myapp || true'
-
-                    // Ejecutar app
-                    sh 'docker run -d --rm --name myapp --network zap-net myapp-image'
-
-                    // Esperar 10 segundos para que la app inicie
-                    sh 'sleep 10'
-
-                    // Ejecutar ZAP con volumen para guardar reportes
-                    docker.image('ghcr.io/zaproxy/zaproxy:stable').inside("--network zap-net -v ${zapDir}:/zap/wrk -v ${env.WORKSPACE}/zap-config.yaml:/zap/wrk/zap-config.yaml") {
+                    docker.image('ghcr.io/zaproxy/zaproxy:stable').inside("--network zap-net -v ${zapDir}:/zap/wrk") {
                         sh '''
                         zap-baseline.py \
                             -t http://myapp:5000 \
                             -r /zap/wrk/zap-report.html \
-                            -J /zap/wrk/zap-report.json \
-                            -c /zap/wrk/zap-config.yaml || true
+                            -J /zap/wrk/zap-report.json || true
                         '''
                     }
 
-                    // Parar app y eliminar red
-                    sh 'docker stop myapp || true'
-                    sh 'docker network rm zap-net || true'
-
-                    // Archivar los reportes desde la carpeta zap-output
-                    archiveArtifacts artifacts: 'zap-output/zap-report.html,zap-output/zap-report.json'
+                    archiveArtifacts artifacts: 'zap-output/zap-report.html,zap-output/zap-report.json', allowEmptyArchive: false
                 }
             }
         }
@@ -209,7 +193,7 @@ pipeline {
     post {
         always {
             echo 'Pipeline completed. Cleaning up...'
-            archiveArtifacts artifacts: 'zap/zap-report.html,zap/zap-report.json', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'zap-output/zap-report.html,zap-output/zap-report.json', allowEmptyArchive: true
         }
         success {
             echo 'Pipeline succeeded!'
