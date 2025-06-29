@@ -97,8 +97,7 @@ pipeline {
                         --exclude venv \
                         --exclude .git \
                         --exclude tests \
-                        --noupdate \
-                        --verbose
+                        --noupdate
                     '''
                 }
             }
