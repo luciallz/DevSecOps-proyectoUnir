@@ -185,16 +185,6 @@ pipeline {
                 }
             }
         }
-        stage('Force Success on Warnings') {
-            steps {
-                script {
-                    if (currentBuild.result == 'UNSTABLE') {
-                        echo "Build marked UNSTABLE, forcing SUCCESS"
-                        currentBuild.result = 'SUCCESS'
-                    }
-                }
-            }
-        }
 
     }
 
