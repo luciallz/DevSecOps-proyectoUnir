@@ -173,16 +173,16 @@ pipeline {
                 script {
                     echo "Running ZAP scan against http://myapp:5000"
 
-                    sh '''
+                    sh """
                         docker run --rm --network zap-net \
-                            -v ${WORKSPACE}/zap:/zap/wrk:rw \
-                            ghcr.io/zaproxy/zap-automation:latest \
+                            -v ${env.WORKSPACE}/zap:/zap/wrk:rw \
+                            ghcr.io/zaproxy/zap-automation:0.15.0 \
                             zap-baseline.py \
                             -t http://myapp:5000 \
                             -r /zap/wrk/zap-report.html \
                             -J /zap/wrk/zap-report.json \
                             -c /zap/wrk/zap-config.yaml
-                    '''
+                    """
                 }
             }
             post {
