@@ -83,14 +83,16 @@ pipeline {
 
         stage('Init ODC DB') {
             steps {
-                sh 'mkdir -p odc-data'
-                withDockerContainer(image: 'owasp/dependency-check', args: '--entrypoint="" -v $PWD/odc-data:/usr/share/dependency-check/data') {
-                    sh '''
-                        echo "Actualizando base de datos CVE (una sola vez)..."
-                        /usr/share/dependency-check/bin/dependency-check.sh \
-                            --updateonly \
-                            --data /usr/share/dependency-check/data
-                    '''
+                timeout(time: 10, unit: 'MINUTES') {
+                    sh 'mkdir -p odc-data && chown -R 1000:1000 odc-data'
+                    withDockerContainer(image: 'owasp/dependency-check', args: '--entrypoint="" -v $PWD/odc-data:/usr/share/dependency-check/data') {
+                        sh '''
+                            echo "Actualizando base de datos CVE (una sola vez)..."
+                            /usr/share/dependency-check/bin/dependency-check.sh \
+                                --updateonly \
+                                --data /usr/share/dependency-check/data
+                        '''
+                    }
                 }
             }
         }
