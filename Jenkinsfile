@@ -138,31 +138,23 @@ pipeline {
         stage('Run App and DAST with ZAP') {
             steps {
                 script {
-                    sh 'docker network create zap-net || true'
-                    sh 'docker rm -f myapp || true'
-
-                    // Ejecutar app (sin --rm)
-                    sh 'docker run -d --name myapp --network zap-net myapp-image'
-
-                    // Crear carpeta para reportes
-                    sh 'mkdir -p ${WORKSPACE}/zap/wrk'
-
-                    docker.image('ghcr.io/zaproxy/zaproxy:stable').inside("--network zap-net -v ${WORKSPACE}/zap/wrk:/zap/wrk") {
-                        sh '''
+                    // Ruta base del zap dentro del workspace
+                    def zapBasePath = "${env.WORKSPACE}/zap"
+                    
+                    // Ejecutar zap-baseline.py apuntando a la app y usando la config y reportes en la carpeta zap
+                    sh """
                         zap-baseline.py \
-                            -t http://myapp:5000 \
-                            -r /zap/wrk/zap-report.html \
-                            -J /zap/wrk/zap-report.json \
-                            -c zap-config.yaml || true
-                        '''
-                    }
-
-                    sh 'docker stop myapp || true'
-                    sh 'docker rm myapp || true'
-                    sh 'docker network rm zap-net || true'
-
-                    // Archivar desde la carpeta montada
-                    archiveArtifacts artifacts: 'zap/wrk/zap-report.html,zap/wrk/zap-report.json'
+                        -t http://myapp:5000 \
+                        -r ${zapBasePath}/zap-report.html \
+                        -J ${zapBasePath}/zap-report.json \
+                        -c ${zapBasePath}/zap-config.yaml
+                    """
+                }
+            }
+            post {
+                always {
+                    // Archivar reportes si existen
+                    archiveArtifacts artifacts: 'zap/zap-report.html,zap/zap-report.json', allowEmptyArchive: true
                 }
             }
         }
@@ -172,7 +164,7 @@ pipeline {
     post {
         always {
             echo 'Pipeline completed. Cleaning up...'
-            archiveArtifacts artifacts: '**/test-reports/*,**/dependency-check-reports/*,zap-report.*'
+            archiveArtifacts artifacts: 'zap/zap-report.html,zap/zap-report.json', allowEmptyArchive: true
         }
         success {
             echo 'Pipeline succeeded!'

@@ -15,6 +15,7 @@ services:
       - /var/jenkins_home:/var/jenkins_home
       - /var/jenkins_tmp:/var/jenkins_tmp
       - /home/kali2/Documentos/dependency-check:/opt/dependency-check
+      - /home/kali2/Documentos/dependency-check/zap:/var/jenkins_home/workspace/DevSecOps-proyectoUnir/zap  # <-- monta la carpeta zap aquí
       - /var/run/docker.sock:/var/run/docker.sock
       - /usr/bin/docker:/usr/bin/docker
     networks:
