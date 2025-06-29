@@ -139,16 +139,6 @@ pipeline {
             }
         }
 
-        stage('Login to GHCR') {
-            steps {
-                withCredentials([string(credentialsId: 'GHCR_TOKEN', variable: 'GHCR_TOKEN')]) {
-                sh '''
-                    echo $GHCR_TOKEN | docker login ghcr.io -u luciallz --password-stdin
-                '''
-                }
-            }
-        }
-
         stage('Build App Docker Image') {
             steps {
                 sh 'docker build -f Dockerfile.jenkins -t myapp-image .'
