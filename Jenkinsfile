@@ -81,19 +81,25 @@ pipeline {
             }
         }
 
-        stage('Dependency-Check Analysis') {
+        stage('Init ODC DB') {
             steps {
-                sh 'rm -rf odc-data dependency-check-reports && mkdir -p odc-data dependency-check-reports && chown -R 1000:1000 odc-data'
+                sh 'mkdir -p odc-data'
                 withDockerContainer(image: 'owasp/dependency-check', args: '--entrypoint="" -v $PWD/odc-data:/usr/share/dependency-check/data') {
                     sh '''
-                        if [ ! -f "/usr/share/dependency-check/data/db.lock" ]; then
-                            echo "Primera ejecución: actualizando la base de datos de CVEs..."
-                            UPDATE_FLAG=""
-                        else
-                            echo "Base de datos ya existe: evitando actualización para ir más rápido."
-                            UPDATE_FLAG="--noupdate"
-                        fi
+                        echo "Actualizando base de datos CVE (una sola vez)..."
+                        /usr/share/dependency-check/bin/dependency-check.sh \
+                            --updateonly \
+                            --data /usr/share/dependency-check/data
+                    '''
+                }
+            }
+        }
 
+        stage('Dependency-Check Analysis') {
+            steps {
+                withDockerContainer(image: 'owasp/dependency-check', args: '--entrypoint="" -v $PWD/odc-data:/usr/share/dependency-check/data') {
+                    sh '''
+                        echo "Ejecutando análisis ODC sin actualizar la base..."
                         /usr/share/dependency-check/bin/dependency-check.sh \
                             --project DevSecOps-proyectoUnir \
                             --scan src \
@@ -105,7 +111,9 @@ pipeline {
                             --exclude venv \
                             --exclude .git \
                             --exclude tests \
-                            $UPDATE_FLAG
+                            --exclude dist \
+                            --exclude build \
+                            --noupdate
                     '''
                 }
             }
@@ -153,7 +161,6 @@ pipeline {
     post {
         always {
             echo 'Pipeline completed. Cleaning up...'
-            sh 'pkill -f "python src/app.py" || echo "No app to kill"'
             archiveArtifacts artifacts: '**/test-reports/*,**/dependency-check-reports/*,zap-report.*'
         }
         success {
