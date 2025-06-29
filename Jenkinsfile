@@ -10,22 +10,11 @@ pipeline {
         stage('Clean Workspace') {
             steps {
                 sh '''
-                    echo "Limpiando workspace manualmente..."
+                     echo "Limpiando workspace manualmente..."
                     rm -rf ${WORKSPACE}/* || true
                     rm -rf ${WORKSPACE}/.* 2>/dev/null || true
+                    rm -rf ${WORKSPACE}/zap || true     # <-- Limpieza explícita de zap
                 '''
-            }
-        }
-
-        stage('Clean ZAP Folder') {
-            steps {
-                script {
-                    sh '''
-                        echo "Limpiando workspace manualmente por posibles problemas de permisos..."
-                        rm -rf ${WORKSPACE}/* || true
-                        rm -rf ${WORKSPACE}/.* 2>/dev/null || true
-                    '''
-                }
             }
         }
 
@@ -199,6 +188,12 @@ pipeline {
                             ghcr.io/zaproxy/zap-automation:0.15.0 \
                             zap.sh -cmd -autorun /zap/wrk/zap-config.yaml
                     '''
+
+                    echo "Corrigiendo permisos en carpeta zap para evitar problemas de borrado posteriores..."
+                    sh '''
+                        chown -R $(id -u):$(id -g) ${WORKSPACE}/zap || true
+                        chmod -R u+w ${WORKSPACE}/zap || true
+                    '''
                 }
             }
             post {
@@ -212,6 +207,7 @@ pipeline {
     post {
         always {
             echo 'Pipeline completed. Cleaning up...'
+            sh 'rm -rf ${WORKSPACE}/zap || true'  // Limpieza final para evitar problemas en próximo build
         }
         success {
             echo 'Pipeline succeeded!'
