@@ -1,0 +1,14 @@
+zap:
+  target: "http://localhost:5000/"
+  spider:
+    maxDuration: 5       # minutos para el spidering
+    threadCount: 2
+  activeScan:
+    enabled: true
+    maxDuration: 10      # minutos para el escaneo activo
+    threadCount: 5
+  authentication:
+    enabled: false
+  reports:
+    format: "html"       # formatos posibles: html, xml, json
+    outputDir: "zap/reports"
