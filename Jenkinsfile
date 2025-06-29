@@ -81,7 +81,7 @@ pipeline {
 
         stage('Init ODC DB') {
             steps {
-                timeout(time: 60, unit: 'MINUTES') {  // Aumentamos timeout a 60 min
+                timeout(time: 60, unit: 'MINUTES') {
                     script {
                         def odcDataDir = "${env.WORKSPACE}/odc-data"
                         sh """
@@ -89,11 +89,11 @@ pipeline {
                             rm -f ${odcDataDir}/write.lock || true
                             rm -f ${odcDataDir}/*.lock || true
                         """
-                        withCredentials([string(credentialsId: 'nvd-api-key', variable: 'nvd-api-key')]) {
-                            withDockerContainer(image: 'owasp/dependency-check', args: "--entrypoint='' -v ${odcDataDir}:/usr/share/dependency-check/data -e nvd-api-key=${nvd-api-key}") {
+                        withCredentials([string(credentialsId: 'nvd-api-key', variable: 'NVD_API_KEY')]) {
+                            withDockerContainer(image: 'owasp/dependency-check', args: "--entrypoint='' -v ${odcDataDir}:/usr/share/dependency-check/data -e NVD_API_KEY=${NVD_API_KEY}") {
                                 sh '''
                                     echo "Actualizando base de datos CVE (una sola vez)..."
-                                    /usr/share/dependency-check/bin/dependency-check.sh --updateonly --data /usr/share/dependency-check/data --nvdApiKey $nvd-api-key || echo "Actualización DB ya en uso o falló, continuando..."
+                                    /usr/share/dependency-check/bin/dependency-check.sh --updateonly --data /usr/share/dependency-check/data --nvdApiKey $NVD_API_KEY || echo "Actualización DB ya en uso o falló, continuando..."
                                 '''
                             }
                         }
